@@ -21,6 +21,19 @@ fussy <- gbif_matched |>
   filter(matchType == "FUZZY") |> 
   select(family...1,scientificname, scientificName,pub,page,)
 
+#### adding geo information #####
+
+add_geo <- function(df){
+  df %>% 
+    mutate(
+      Geodetic_datum = "wgs84",
+      continent = "EUROPE",
+      higherGeographyID = "http://vocab.getty.edu/page/tgn/1000066",
+      higherGeography = "Denmark",
+      countryCode = "DA", 
+      locationID = "TDWG:DEN-OO"
+    )
+}
 #### writing the file ####
 
 thedate <- strftime(Sys.Date(),"%Y_%m_%d")
