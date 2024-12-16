@@ -34,7 +34,19 @@ add_geo <- function(df){
       locationID = "TDWG:DEN-OO"
     )
 }
+
+#### adding the id function ####
+
+add_id <- function(df){
+  df %>% 
+    mutate(
+      id1 = "urn:tbu",
+      id2 = random_id(nrow(.))
+    ) %>% 
+    unite("occurrenceID",id1:id2, sep = ":") 
+}
+
 #### writing the file ####
 
 thedate <- strftime(Sys.Date(),"%Y_%m_%d")
-#write_csv(ginr_herbarium_ipt, paste0(thedate,"_ginr_herbarium_ipt",".txt"))
+#write_csv(tbu, paste0(thedate,"_tbu_taxon_list",".txt"))
