@@ -18,8 +18,23 @@ gbif_matched <- xx |>
 #### checking fussy taxa ####
 
 fussy <- gbif_matched |> 
-  filter(matchType == "FUZZY") |> 
+  filter(matchType == "FUZZY",
+         is.na(taxonomic_note)) |> 
   select(family...1,scientificname, scientificName,pub,page,)
+
+#### organizing data for gbif ####
+gbif_file <- gbif_matched |> 
+  mutate(
+    rank = rank...18 
+  ) |> 
+  select(
+    scientificName,
+    order,
+    rank,
+    family...1,
+    family...28
+  ) 
+ 
 
 #### adding geo information #####
 
