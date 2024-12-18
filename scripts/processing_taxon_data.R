@@ -33,7 +33,12 @@ gbif_file <- gbif_matched |>
     rank,
     family...1,
     family...28
-  ) 
+  )
+
+#### checking nas ####
+
+nas <- gbif_matched |> 
+  filter(is.na(scientificName))
  
 
 #### adding geo information #####
