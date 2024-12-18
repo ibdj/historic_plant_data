@@ -15,6 +15,9 @@ xx <- read_sheet('https://docs.google.com/spreadsheets/d/1Zeqozv4IKLRNfixj5c8vws
 gbif_matched <- xx |> 
   gbif_species_name_match(name = "scientificname") 
 
+gbif_matched_name_backbone_checklist <- xx |> 
+  name_backbone_checklist(name = "scientificname")
+
 #### checking fussy taxa ####
 
 fussy <- gbif_matched |> 
@@ -39,7 +42,10 @@ gbif_file <- gbif_matched |>
 
 nas <- gbif_matched |> 
   filter(is.na(scientificName))
- 
+
+nas_backbone_checklist <- gbif_matched_name_backbone_checklist |> 
+  filter(matchType == "FUZZY")
+
 
 #### adding geo information #####
 
