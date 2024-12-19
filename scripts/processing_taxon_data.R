@@ -21,7 +21,7 @@ gbif_matched_name_backbone_checklist <- xx |>
 #### checking fussy taxa ####
 
 not_matched <- gbif_matched_name_backbone_checklist |> 
-  filter(is.na(speciesKey))
+  #filter(is.na(speciesKey))
 
 fussy <- gbif_matched |> 
   filter(matchType == "FUZZY",
