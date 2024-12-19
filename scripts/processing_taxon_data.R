@@ -1,11 +1,11 @@
 #### tbu taxon list ####
 
 #### loading packages ####
-install.packages("pacman")
-pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools) 
+if (!require("pacman")) install.packages("pacman")
 devtools::install_github("inbo/inborutils")
-library(inborutils)
+pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
+library(rgbif)
 #### reading the file ####
 
 xx <- read_sheet('https://docs.google.com/spreadsheets/d/1Zeqozv4IKLRNfixj5c8vwsZQf6BFwduJu7DyWTVSfsw/edit?gid=0#gid=0', sheet = 'taxa')
@@ -16,9 +16,12 @@ gbif_matched <- xx |>
   gbif_species_name_match(name = "scientificname") 
 
 gbif_matched_name_backbone_checklist <- xx |> 
-  name_backbone_checklist(name = "scientificname")
+  name_backbone_checklist("scientificname")
 
 #### checking fussy taxa ####
+
+not_matched <- gbif_matched_name_backbone_checklist |> 
+  filter(is.na(speciesKey))
 
 fussy <- gbif_matched |> 
   filter(matchType == "FUZZY",
