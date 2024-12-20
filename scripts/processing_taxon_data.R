@@ -22,6 +22,8 @@ gbif_matched_name_backbone_checklist <- xx |>
 
 not_matched <- gbif_matched_name_backbone_checklist |> 
   #filter(is.na(speciesKey))
+  filter(matchType == "FUZZY") |> 
+  select(verbatim_name,usageKey,scientificName,canonicalName, rank, status,confidence,matchType,kingdom,phylum,order,family,genus,species,kingdomKey,phylumKey,classKey,orderKey,familyKey,genusKey,speciesKey,synonym,class,acceptedUsageKey,verbatim_family,verbatim_genus,verbatim_rank,verbatim_index)
 
 fussy <- gbif_matched |> 
   filter(matchType == "FUZZY",
