@@ -16,14 +16,45 @@ gbif_matched <- xx |>
   gbif_species_name_match(name = "scientificname") 
 
 gbif_matched_name_backbone_checklist <- xx |> 
-  name_backbone_checklist("scientificname")
+  name_backbone_checklist("verbatim_name")
 
 #### checking fussy taxa ####
 
+# making an editable list of colomns# 
+column_list <- colnames(gbif_matched_name_backbone_checklist)
+
+column_string <- paste(column_list, collapse = ",\n")
+cat(column_string)
+
+# ordering the colomns #
 not_matched <- gbif_matched_name_backbone_checklist |> 
   #filter(is.na(speciesKey))
   filter(matchType == "FUZZY") |> 
-  select(verbatim_name,usageKey,scientificName,canonicalName, rank, status,confidence,matchType,kingdom,phylum,order,family,genus,species,kingdomKey,phylumKey,classKey,orderKey,familyKey,genusKey,speciesKey,synonym,class,acceptedUsageKey,verbatim_family,verbatim_genus,verbatim_rank,verbatim_index)
+  select(usageKey,
+         scientificName,
+         canonicalName,
+         rank,
+         status,
+         confidence,
+         matchType,
+         kingdom,
+         phylum,
+         order,
+         family,
+         genus,
+         kingdomKey,
+         phylumKey,
+         classKey,
+         orderKey,
+         familyKey,
+         genusKey,
+         synonym,
+         class,
+         acceptedUsageKey,
+         verbatim_family,
+         verbatim_genus,
+         verbatim_rank,
+         verbatim_index)
 
 fussy <- gbif_matched |> 
   filter(matchType == "FUZZY",
