@@ -6,3 +6,5 @@ xy_longer <- xy |>
   pivot_longer(cols = 4:10, names_to = "location", values_to = "date") |> 
   drop_na()
   
+xy_gbif_matched_name_backbone_checklist <- xy |> 
+  name_backbone_checklist("name")
