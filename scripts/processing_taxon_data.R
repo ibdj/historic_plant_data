@@ -5,18 +5,14 @@ if (!require("pacman")) install.packages("pacman")
 devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
-library(rgbif)
 #### reading the file ####
 
 xx <- read_sheet('https://docs.google.com/spreadsheets/d/1Zeqozv4IKLRNfixj5c8vwsZQf6BFwduJu7DyWTVSfsw/edit?gid=0#gid=0', sheet = 'taxa')
   
 #### matching with gbif backbone ####
 
-gbif_matched <- xx |> 
-  gbif_species_name_match(name = "scientificname") 
-
 gbif_matched_name_backbone_checklist <- xx |> 
-  name_backbone_checklist("verbatim_name")
+  name_backbone_checklist("name")
 
 #### checking fussy taxa ####
 
@@ -31,6 +27,7 @@ not_matched <- gbif_matched_name_backbone_checklist |>
   #filter(is.na(speciesKey))
   filter(matchType == "FUZZY") |> 
   select(usageKey,
+         verbatim_name,
          scientificName,
          canonicalName,
          rank,
