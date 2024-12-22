@@ -7,9 +7,16 @@ xy_longer <- xy |>
   drop_na()
   
 xy_gbif_matched_name_backbone_checklist <- xy |> 
-  name_backbone_checklist("name")
+  name_backbone_checklist("name") |> 
+  rename(name = verbatim_name)
 
 
-#### reading location ####
+# reading location ####
 
 xy_locations <- read_sheet('https://docs.google.com/spreadsheets/d/1adm-3HKTyeDMY-WPOWWSKN37hGuj5EWNMjJIh3D6tkc/edit?gid=0#gid=0', sheet = 'locations')
+
+# joining locations and ####
+
+xy_joined <- xy_longer |> 
+  left_join(xy_locations, by = 'location') |> 
+  left_join(xy_gbif_matched_name_backbone_checklist, by = 'name')
