@@ -18,5 +18,10 @@ xy_locations <- read_sheet('https://docs.google.com/spreadsheets/d/1adm-3HKTyeDM
 # joining locations and ####
 
 xy_joined <- xy_longer |> 
-  left_join(xy_locations, by = 'location') |> 
-  left_join(xy_gbif_matched_name_backbone_checklist, by = 'name')
+  left_join(xy_locations, by = 'location', relationship = "many-to-many") |> 
+  left_join(xy_gbif_matched_name_backbone_checklist, by = 'name', relationship = "many-to-many")
+
+# checking unmatched ####
+
+xy_joined_not_matched <- xy_joined |> 
+  filter(is.na(species))
