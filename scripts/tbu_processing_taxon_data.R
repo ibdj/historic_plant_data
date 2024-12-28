@@ -34,17 +34,17 @@ not_matched <- gbif_matched_name_backbone_checklist |>
          status,
          confidence,
          matchType,
-         kingdom,
-         phylum,
-         order,
-         family,
-         genus,
-         kingdomKey,
-         phylumKey,
-         classKey,
-         orderKey,
-         familyKey,
-         genusKey,
+         #kingdom,
+         #phylum,
+         #order,
+         #family,
+         #genus,
+         #kingdomKey,
+         #phylumKey,
+         #classKey,
+         #orderKey,
+         #familyKey,
+         #genusKey,
          synonym,
          class,
          acceptedUsageKey,
@@ -59,17 +59,17 @@ fussy <- gbif_matched |>
   select(family...1,scientificname, scientificName,pub,page,)
 
 #### organizing data for gbif ####
-gbif_file <- gbif_matched |> 
-  mutate(
-    rank = rank...18 
-  ) |> 
-  select(
-    scientificName,
-    order,
-    rank,
-    family...1,
-    family...28
-  )
+gbif_file <- gbif_matched_name_backbone_checklist
+  # mutate(
+  #   #rank = rank...18 
+  # ) |> 
+  # select(
+  #   scientificName,
+  #   order,
+  #   rank
+  #   #family...1,
+  #   #family...28
+  # )
 
 #### checking nas ####
 
