@@ -10,6 +10,7 @@ xy_gbif_matched_name_backbone_checklist <- xy |>
   name_backbone_checklist("name") |> 
   rename(name = verbatim_name)
 
+# to do: change match type on name_backbone_checklist to get better match of Heterotypic synonyms from GBIF?
 
 # reading location ####
 
