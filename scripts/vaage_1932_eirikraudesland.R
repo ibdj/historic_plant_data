@@ -125,4 +125,5 @@ synonyms <- ipt_fil |>
 view(synonyms)
 
 thedate <- strftime(Sys.Date(),"%Y_%m_%d")
-write_csv(ipt_fil, paste0(thedate,"_vaage_1932_eirikaudesland",".csv"))
+
+write_csv(ipt_fil, paste0("outputs/",thedate,"_vaage_1932_eirikaudesland",".csv"))
