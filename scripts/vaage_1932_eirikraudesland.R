@@ -102,7 +102,10 @@ ipt_fil <- vaage_1932_eirikraudesland |>
     decimalLongitude = lon,
     year = year(date),
     month = month(date),
-    day = day(date))
+    day = day(date),
+    InstitutionID = "https://ror.org/0342y5q78",
+    InstitutionCode = "GINR"
+    )
 
 add_geo_gl <- function(df){
   df |>  
