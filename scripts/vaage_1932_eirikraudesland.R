@@ -1,3 +1,10 @@
+#### reading packages ##########################################################################################################
+
+if (!require("pacman")) install.packages("pacman")
+devtools::install_github("inbo/inborutils")
+epacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
+
+#### reading the data from google sheets########################################################################################
 taxa <- read_sheet('https://docs.google.com/spreadsheets/d/12SAJkY1w_2K00zcimrtjUWynfprDtKdFRTY03UFPyVM/edit?gid=1761157836#gid=1761157836', sheet = 'taxa')
 
 locations <- read_sheet('https://docs.google.com/spreadsheets/d/12SAJkY1w_2K00zcimrtjUWynfprDtKdFRTY03UFPyVM/edit?gid=1761157836#gid=1761157836', sheet = 'locations')
