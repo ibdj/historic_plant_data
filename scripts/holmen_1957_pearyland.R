@@ -5,9 +5,11 @@ devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
 #### reading the data from google sheets########################################################################################
-taxa <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'taxa') |> rename( )
+taxa <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'taxa')
 
 locations <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'locations')
+
+identifier <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'identifier')
 
 taxa[] <- lapply(taxa, as.character)
 
@@ -15,25 +17,33 @@ taxa_pivot <- taxa |>
   pivot_longer(cols = 3:ncol(taxa), names_to = "location", values_to = "observer") |> 
   drop_na() |> 
   filter(observer != "NULL") |> 
-  separate_wider_delim(cols = observer, delim = "&", names = c("observer1", "oberservr2","observer3"), too_few = "align_start") 
+  separate_wider_delim(cols = observer, delim = "&", names = c("observer1", "observer2","observer3"), too_few = "align_start") 
 
 taxa_pivot_last <- taxa_pivot |> 
   pivot_longer(cols = observer1:observer3, names_to = "pos", values_to = "observer") |> 
-  drop_na()
+  drop_na() |> 
+  filter(!grepl("\\d", observer)) 
 
-#select(name,location,obs) |> 
-#left_join(locations, by = "location")
+dates <- taxa_pivot_last |> 
+  left_join(identifier, by = c("observer", "location"))
 
-taxa_pivot_withdate <- taxa_pivot |> 
-  pivot_longer(cols = date1:date7, names_to = "place", values_to = "date") |> 
-  drop_na()
-
+needs_dates <- dates |> 
+  filter(date == "NULL") |> 
+  distinct(location, observer)
 
 #### matching to GBIF ###################################################################################################################
-xy_gbif_matched_name_backbone_checklist <- taxa |> 
+
+#make a unique list of taxon names
+unique <- taxa_pivot_last |> 
+  distinct(verbatimName)
+
+xy_gbif_matched_name_backbone_checklist <- unique |> 
   name_backbone_checklist("name") |> 
   rename("name" = "verbatim_name") |> 
-  select(usageKey, acceptedUsageKey,scientificName, canonicalName, name,rank,,verbatim_index,verbatim_rank,status,confidence,matchType,kingdom,phylum,order,family,genus,species,kingdomKey,phylumKey,classKey,orderKey,familyKey,genusKey,speciesKey,synonym,class)  
+  mutate(matchType = as.factor(matchType))
+#  select(usageKey, acceptedUsageKey,scientificName, canonicalName, name,rank,,verbatim_index,verbatim_rank,status,confidence,matchType,kingdom,phylum,order#,family,genus,species,kingdomKey,phylumKey,classKey,orderKey,familyKey,genusKey,speciesKey,synonym,class)  
+
+summary(xy_gbif_matched_name_backbone_checklist)
 
 not_matched <- xy_gbif_matched_name_backbone_checklist |> 
   #filter(is.na(speciesKey))
