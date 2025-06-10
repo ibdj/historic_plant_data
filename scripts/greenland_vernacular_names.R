@@ -21,20 +21,23 @@ gbif_matched <- unique |>
   mutate(matchType = as.factor(matchType))
 
 #### list of colomns in the extension of vernacular names #####
-
 #https://rs.gbif.org/extension/gbif/1.0/vernacularname.xml
+# these are the colomns to be included for the extension of vernacularnames. 
+# I have prioritised the list. First section is the ones I think will be included.
 
 # scientificName
 # vernacularName
 # source
 # language
+# organismPart
+# taxonRemarks
+
+# isPlural
+
 # temporal
 # locationID
 # locality
 # sex
 # lifeStage
-# isPlural
 # isPreferredName
-# organismPart
-# taxonRemarks
 # datasetID
