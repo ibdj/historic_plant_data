@@ -89,6 +89,7 @@ vaage_1932_eirikraudesland$family[is.na(vaage_1932_eirikraudesland$family) & gre
 unique(vaage_1932_eirikraudesland$family)
 vaage_1932_eirikraudesland$genus[is.na(vaage_1932_eirikraudesland$genus) & grepl("Draba", vaage_1932_eirikraudesland$scientificName)] <- "Draba"
 vaage_1932_eirikraudesland$genus[is.na(vaage_1932_eirikraudesland$genus) & grepl("Poa ", vaage_1932_eirikraudesland$scientificName)] <- "Poa"
+vaage_1932_eirikraudesland$kingdomKey[is.na(vaage_1932_eirikraudesland$kingdomKey)] <- 6
 
 summary(vaage_1932_eirikraudesland)
 str(vaage_1932_eirikraudesland)
@@ -169,3 +170,5 @@ view(synonyms)
 thedate <- strftime(Sys.Date(),"%Y_%m_%d")
 
 write_csv(ipt_file, paste0("outputs/",thedate,"_vaage_1932_eirikaudesland",".csv"))
+summary(ipt_file)
+view(ipt_file)
