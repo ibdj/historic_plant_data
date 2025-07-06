@@ -27,27 +27,18 @@ col_names <- paste0("col", seq_len(max_splits))
 seperate <- separate(Nunatta_naasui, grl_ref1 , into = col_names, sep = ",", fill = "right")
 
 Nunatta_naasui_longer <- seperate |> 
-  pivot_longer(cols = col1:col3, names_to = "placering", values_to = "grl_name", values_drop_na = TRUE)
+  pivot_longer(cols = col1:col3, names_to = "placering", values_to = "grl_name", values_drop_na = TRUE) |> 
+  mutate(name = taxon,
+         grl_name = trimws(grl_name))
 
-Nunatta_naasui_longer$grl_name <- trimws(Nunatta_naasui_longer$grl_name) 
+gbif_matched <- Nunatta_naasui_longer |> 
+  distinct(taxon) |> 
+  name_backbone_checklist("taxon") |> 
+  mutate(taxon = canonicalName)
 
-filtered <- Nunatta_naasui_longer |> 
-  filter(!is.na("grl_name")) 
-
-#### match to gbif ####
-
-gbif_matched <- unique |> 
-  name_backbone_checklist("name") |> 
-  mutate(matchType = as.factor(matchType),
-         kingdom = as.factor(kingdom)
-         )
-
-summary(gbif_matched)
-
-#### joining the gbid match and data file ####
-joined <- filtered |> 
-  mutate(scientificName = taxon) |> 
-  left_join(gbif_matched, by = "scientificName")
+matched_list <- Nunatta_naasui_longer |> 
+  left_join(gbif_matched, by = "taxon") |> 
+  drop_na("name")
 
 #### list of colomns in the extension of vernacular names #####
 #https://rs.gbif.org/extension/gbif/1.0/vernacularname.xml
