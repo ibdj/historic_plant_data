@@ -8,9 +8,6 @@ devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils, janitor) 
 
 
-#### reading the data from google sheets########################################################################################
-gs4_auth() 
-
 ### remmeber to convert to native google sheet
 
 taxa <- read_sheet('https://docs.google.com/spreadsheets/d/1tMYqjWgUHFMlrIp0gA48t39t8aQB8FTMUSSJPdLjlSI/edit?gid=1716451010#gid=1716451010', sheet = 'Ark1') |> 
@@ -23,8 +20,14 @@ match_list <- taxa |>
   select(name = videnskabeligt_navn) |>  # rename in one go
   distinct()
 
-matched_names <- name_backbone_checklist(match_list, "name")
+matched_names <- name_backbone_checklist(match_list, "name", kingdom = "Plantae")
 #verbatim_name is the one with the original name
+
+##### making an editable list of colomns#  ####
+#column_list <- colnames(joined_list)
+
+#column_string <- paste(column_list, collapse = ",\n")
+#cat(column_string)
 
 joined_list <- taxa |> 
   left_join(matched_names, by = "verbatim_name") |> 
@@ -78,16 +81,14 @@ joined_list <- taxa |>
     class,
     species,
     speciesKey,
-    synonym,
+    #synonym,
     acceptedUsageKey,
     verbatim_index,
     verbatim_rank
   )
 
-# making an editable list of colomns# 
-column_list <- colnames(joined_list)
-
-column_string <- paste(column_list, collapse = ",\n")
-cat(column_string)
 
 names(joined_list)
+
+mssing <- joined_list |> 
+  filter(is.na(genus))
