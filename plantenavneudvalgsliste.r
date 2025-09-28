@@ -12,7 +12,9 @@ pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborut
 
 taxa <- read_sheet('https://docs.google.com/spreadsheets/d/1tMYqjWgUHFMlrIp0gA48t39t8aQB8FTMUSSJPdLjlSI/edit?gid=1716451010#gid=1716451010', sheet = 'Ark1') |> 
   clean_names() |> 
-  mutate(verbatim_name = videnskabeligt_navn)
+  mutate(verbatim_name = videnskabeligt_navn) |> 
+  filter( antal != 0)
+
 
 names(taxa)
 
@@ -20,7 +22,7 @@ match_list <- taxa |>
   select(name = videnskabeligt_navn) |>  # rename in one go
   distinct()
 
-matched_names <- name_backbone_checklist(match_list, "name", kingdom = "Plantae")
+matched_names <- name_backbone_checklist(match_list, "name", kingdom = "Plantae", phylum = "Tracheophyta")
 #verbatim_name is the one with the original name
 
 ##### making an editable list of colomns#  ####
@@ -92,3 +94,8 @@ names(joined_list)
 
 mssing <- joined_list |> 
   filter(is.na(genus))
+
+joined_list$class <- as.factor(joined_list$class)
+joined_list$phylum <- as.factor(joined_list$phylum)
+
+summary(joined_list)
