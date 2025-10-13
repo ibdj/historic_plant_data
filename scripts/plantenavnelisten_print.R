@@ -3,7 +3,7 @@ library(readxl)
 library(tidyverse)
 library(writexl)
 
-df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 03-10-2025.xlsx')
+df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 14-10-2025.xlsx')
 
 
 # Read the file
@@ -44,10 +44,23 @@ df_clean <- df %>%
   #filter(!(is.na(`Accepterede danske navne`) & is.na(`Videnskabeligt navn`)))
   filter(!is.na(`Accepterede danske navne`))
 
+print <- df_clean |> 
+  filter(rank != "slægt") |> 
+  mutate(latex1 = "&\\textit{",
+         latex2 = "}&",
+         latex3 = "&\\textit{",
+         latex4 = "}",
+         latex5 = "\\\\") |> 
+  select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
+
 # Define an output path
-output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print.xlsx"
+output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print14-10-2025.csv"
 
 # Write to Excel
+write_delim(print, output_path, delim = " ")
+
+write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
+
 write_xlsx(df_clean, output_path)
 
 slægter <- df_clean |> 
