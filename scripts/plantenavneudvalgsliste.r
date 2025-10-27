@@ -7,21 +7,32 @@ library(pacman)
 devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils, janitor) 
 library(readxl)
+library(writexl)
 
 ### remmeber to convert to native google sheet
 
-#taxa <- read_sheet('https://docs.google.com/spreadsheets/d/1tMYqjWgUHFMlrIp0gA48t39t8aQB8FTMUSSJPdLjlSI/edit?gid=1716451010#gid=1716451010', sheet = 'Ark1') |> 
-#  clean_names() |> 
-#  mutate(verbatim_name = videnskabeligt_navn) |> 
-#  filter( antal != 0)
+DBF_navneliste_22_10_2025 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 22-10-2025.xlsx") |> 
+clean_names() 
 
-
-DBF_navneliste_13_10_2025 <- read_excel("~/Desktop/DBF navneliste 13-10-2025.xlsx")
-
-taxa <- DBF_navneliste_13_10_2025 |> 
-  clean_names() |> 
+taxa <- DBF_navneliste_22_10_2025 |> 
   mutate(verbatim_name = videnskabeligt_navn) |> 
-  filter(!is.na(accepterede_danske_navne))
+  filter(!is.na(accepterede_danske_navne)) |> 
+  mutate(
+    rang = case_when(
+      grepl("slægten", accepterede_danske_navne, ignore.case = TRUE) ~ "slægt",
+      grepl("var\\.", videnskabeligt_navn , ignore.case = TRUE) ~ "varitet",
+      grepl("subsp\\.", videnskabeligt_navn, ignore.case = TRUE) ~ "underart",
+      grepl("×", videnskabeligt_navn) ~ "hybrid",
+      TRUE ~ "art"
+    ),
+    rang_engelsk = case_when(
+      grepl("slægten", accepterede_danske_navne, ignore.case = TRUE) ~ "GENUS",
+      grepl("var\\.", videnskabeligt_navn , ignore.case = TRUE) ~ "VARIETY",
+      grepl("subsp\\.", videnskabeligt_navn, ignore.case = TRUE) ~ "SUBSPECIES",
+      grepl("×", videnskabeligt_navn) ~ "HYBRID",
+      TRUE ~ "SPECIES"
+    )
+  ) 
   
 
 names(taxa)
@@ -47,12 +58,14 @@ joined_list <- taxa |>
     #antal,
     #version,
     rank,
+    rang,
+    rang_engelsk,
     #dansk_slaegt,
     #videnskalig_slaegt,
     videnskabeligt_navn,
     accepterede_danske_navne,
-    #danske_synonymer,
-    #videnskabeligt_synonym,
+    danske_synonymer,
+    videnskabeligt_synonym,
     #afd,
     #bemaerkninger,
     #afvigende_dk_navn,
@@ -93,9 +106,9 @@ joined_list <- taxa |>
     speciesKey,
     #synonym,
     acceptedUsageKey,
-    verbatim_index,
-    verbatim_rank
-  )
+    #verbatim_rank,
+    verbatim_index
+    )
 
 
 names(joined_list)
@@ -103,7 +116,35 @@ names(joined_list)
 missing <- joined_list |> 
   filter(is.na(genus))
 
+names(joined_list)
+
+print_missing <- missing |>
+  select(rank, rang, videnskabeligt_navn,accepterede_danske_navne, verbatim_name, danske_synonymer, videnskabeligt_synonym)
+
+output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/missing_pnu_liste_2025-10-27.xlsx"
+
+write_xlsx(print_missing, output_path)
+
+joined_list$order <- as.factor(joined_list$order)
+joined_list$kingdom <- as.factor(joined_list$kingdom)
 joined_list$class <- as.factor(joined_list$class)
 joined_list$phylum <- as.factor(joined_list$phylum)
+joined_list$matchType <- as.factor(joined_list$matchType)
+joined_list$rank <- as.factor(joined_list$rank)
+joined_list$rang <- as.factor(joined_list$rang)
+joined_list$rang_engelsk <- as.factor(joined_list$rang_engelsk)
+
+
 
 summary(joined_list)
+
+mismatch_rank <- joined_list |> 
+  filter(rang_engelsk != rank)
+
+mismatch_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/mismatch_gbif_pnu_liste_2025-10-27.xlsx"
+
+write_xlsx(mismatch_rank, mismatch_path)
+
+path_joined <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/joined_gbif_pnu_liste_2025-10-27.xlsx"
+
+write_xlsx(joined_list, path_joined)
