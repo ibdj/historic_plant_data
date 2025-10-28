@@ -3,23 +3,23 @@ library(readxl)
 library(tidyverse)
 library(writexl)
 
-df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 14-10-2025.xlsx')
+df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 22-10-2025.xlsx') |> 
+  mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
 
-# Read the file
-
-library(readxl)
-DBF_navneliste_13_10_2025 <- read_excel("~/Desktop/DBF navneliste 13-10-2025.xlsx")
-df <- DBF_navneliste_13_10_2025
-
-file_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 03-10-2025.xlsx"
-# df <- read_excel(file_path) |> 
+# # Read the file
+# 
+# DBF_navneliste_13_10_2025 <- read_excel("~/Desktop/DBF navneliste 13-10-2025.xlsx")
+# df <- DBF_navneliste_13_10_2025
+# 
+# file_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 03-10-2025.xlsx"
+# # df <- read_excel(file_path) |> 
+# #   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), 
+# #          index = row_number())
+# 
+# df <- DBF_navneliste_13_10_2025 |> 
 #   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), 
 #          index = row_number())
-
-df <- DBF_navneliste_13_10_2025 |> 
-  mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), 
-         index = row_number())
 
 df_clean <- df %>%
   # Identify Latin genus names (no space)
@@ -62,7 +62,7 @@ print <- df_clean |>
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
 # Define an output path
-output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print25-10-2025.csv"
+output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print26-10-2025.csv"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
