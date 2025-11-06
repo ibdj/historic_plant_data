@@ -3,7 +3,7 @@ library(readxl)
 library(tidyverse)
 library(writexl)
 
-df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 22-10-2025.xlsx') |> 
+df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/2025-11-06 DBF navneliste 06-11-2025.xlsx') |> 
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
 
@@ -62,7 +62,7 @@ print <- df_clean |>
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
 # Define an output path
-output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print26-10-2025.csv"
+output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print06-11-2025.csv"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
