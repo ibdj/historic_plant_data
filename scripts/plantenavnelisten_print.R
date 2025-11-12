@@ -50,7 +50,9 @@ df_clean <- df %>%
          `Dansk slægt` = dansk_slaegt_marker) |> 
   select(`Accepterede danske navne`, `Videnskabeligt navn`,`Dansk slægt`,rank,genus,index,n_filled) |> 
   #filter(!(is.na(`Accepterede danske navne`) & is.na(`Videnskabeligt navn`)))
-  filter(!is.na(`Accepterede danske navne`))
+  filter(!is.na(`Accepterede danske navne`)) |> 
+  group_by(`Dansk slægt`) |> 
+  mutate(count = n())
 
 print <- df_clean |> 
   filter(rank != "slægt") |> 
@@ -70,6 +72,23 @@ write_delim(print, output_path, delim = " ")
 write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
 
 write_xlsx(df_clean, output_path)
+
+kun_en_art <- df_clean |> 
+  filter(count == 2, rank == "art")
+
+kun_en_art2 <- kun_en_art %>%
+  mutate(
+    expected = paste0(`Accepterede danske navne`, "slægten"),
+    match = `Dansk slægt` == expected,
+    detail = ifelse(
+      match,
+      "",
+      paste0("Kunne være ", sub("slægten$", "", `Dansk slægt`), " men er ", `Accepterede danske navne`)
+    )
+  )
+
+names(kun_en_art2)
+write_xlsx(kun_en_art2 |> select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,detail), "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/2025 11 14 DBF_navneliste_kun_en_art.xlsx")
 
 slægter <- df_clean |> 
   filter(rank == "slægt")
