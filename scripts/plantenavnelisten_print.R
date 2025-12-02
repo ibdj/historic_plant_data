@@ -1,25 +1,12 @@
-#### ####
+#### loading packages ####
 library(readxl)
 library(tidyverse)
 library(writexl)
+library(googlesheets4)
 
-df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/2025-11-06 DBF navneliste 06-11-2025.xlsx') |> 
+#### importing data #####
+df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/2025 11 19 DBF navneliste 5. version 19-11-2025.xlsx') |> 
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
-
-
-# # Read the file
-# 
-# DBF_navneliste_13_10_2025 <- read_excel("~/Desktop/DBF navneliste 13-10-2025.xlsx")
-# df <- DBF_navneliste_13_10_2025
-# 
-# file_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 03-10-2025.xlsx"
-# # df <- read_excel(file_path) |> 
-# #   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), 
-# #          index = row_number())
-# 
-# df <- DBF_navneliste_13_10_2025 |> 
-#   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), 
-#          index = row_number())
 
 df_clean <- df %>%
   # Identify Latin genus names (no space)
@@ -72,6 +59,45 @@ write_delim(print, output_path, delim = " ")
 write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
 
 write_xlsx(df_clean, output_path)
+
+#### slægt-art mismatch #############
+
+names(df_clean)
+
+slægt_art_mismatch <- df_clean |> 
+  mutate(
+    slægt_navn = case_when(
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "pile" ~ "pil",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "rosen" ~ "rose",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "lærke" ~ "lærk",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "fyrre" ~ "fyr",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "rønne" ~ "røn",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "elme" ~ "elm",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "ege" ~ "eg",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "elle" ~ "el",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "birke" ~ "birk",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "linde" ~ "lind",
+      TRUE ~ tolower(sub("slægten$", "", `Dansk slægt`))
+    ),
+    genus_dk = sub("^[^- ]+[- ]+([^ ]+).*", "\\1", `Accepterede danske navne`),
+    epithet = ifelse(rank != "slægt" & grepl("[- ]", `Accepterede danske navne`),sub("([^- ]+[- ]).*", "\\1", `Accepterede danske navne`),""),
+    expected = case_when(
+      rank != "slægt" & epithet != "" ~ paste0(epithet, slægt_navn),
+      rank != "slægt" & epithet == ""  ~ paste0(toupper(substr(slægt_navn, 1, 1)), substr(slægt_navn, 2, nchar(slægt_navn))),
+      TRUE ~ ""
+    ),
+    match    = ifelse(rank != "slægt", `Accepterede danske navne` == expected, ""),
+    detail   = ifelse(rank != "slægt", ifelse(match, "", paste0("Kunne være ", expected, ", men er ", `Accepterede danske navne`)
+      ),"")
+  )
+
+gs4_auth()
+gs4_create("slægt_art_mismatch_results", sheets = slægt_art_mismatch)
+
+slægt_art_mismatch_kun <- slægt_art_mismatch |> 
+  filter(detail != "", epithet != "")
+
+
 
 kun_en_art <- df_clean |> 
   filter(count == 2, rank == "art")
