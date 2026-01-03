@@ -5,7 +5,7 @@ devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
 
-#### reading the data from google sheets########################################################################################
+#### reading the data from google sheets ########################################################################
 taxa <- read_sheet('https://docs.google.com/spreadsheets/d/1raYqt1BoLer6AP-bACSlEvHvxYcpnEGdKOXSew6oMSo/edit?gid=0#gid=0', sheet = 'taxa') |> 
   mutate(Latitude = "",
          Longitude = "")
