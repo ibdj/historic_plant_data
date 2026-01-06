@@ -5,7 +5,9 @@ library(writexl)
 library(googlesheets4)
 
 #### importing data #####
-df <- read_excel('/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/2025 11 19 DBF navneliste 5. version 19-11-2025.xlsx') |> 
+DBF_navneliste_6_version_06_01_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 6. version 06-01-2026.xlsx")
+
+df <- DBF_navneliste_6_version_06_01_2026 |> 
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
 df_clean <- df %>%
@@ -51,7 +53,7 @@ print <- df_clean |>
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
 # Define an output path
-output_path <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF_navneliste_print06-11-2025.csv"
+output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.txt"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
