@@ -43,6 +43,9 @@ df_clean <- df %>%
   group_by(`Dansk slægt`) |> 
   mutate(count = n())
 
+
+#### lave printliste ##########################################################
+
 print <- df_clean |> 
   filter(rank != "slægt") |> 
   mutate(latex1 = "&\\textit{",
@@ -60,9 +63,9 @@ write_delim(print, output_path, delim = " ")
 
 write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
 
-write_xlsx(df_clean, output_path)
+write_xlsx(df_clean,  "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.txt")
 
-#### slægt-art mismatch #############
+#### slægt-art mismatch ########################################################
 
 names(df_clean)
 
@@ -78,6 +81,7 @@ slægt_art_mismatch <- df_clean |>
       tolower(sub("slægten$", "", `Dansk slægt`)) == "ege" ~ "eg",
       tolower(sub("slægten$", "", `Dansk slægt`)) == "elle" ~ "el",
       tolower(sub("slægten$", "", `Dansk slægt`)) == "birke" ~ "birk",
+      tolower(sub("slægten$", "", `Dansk slægt`)) == "aske" ~ "ask",
       tolower(sub("slægten$", "", `Dansk slægt`)) == "linde" ~ "lind",
       TRUE ~ tolower(sub("slægten$", "", `Dansk slægt`))
     ),
@@ -126,3 +130,27 @@ hybrider <- df_clean |>
 
 arter <- df_clean |> 
   filter(rank == "art")
+
+
+#### arter som hedder det samme som slægten ####################################
+
+etleddet_samme_slægt <- slægt_art_mismatch |> 
+  filter(!grepl("[[:space:]-]", `Accepterede danske navne`), rank != "slægt") |> 
+  filter(match == TRUE, count > 2)
+
+#### navne uden dansk arts epitet (étledet navn) ############################### 
+
+etleddet <- df_clean |> 
+  filter(!grepl("[[:space:]-]", `Accepterede danske navne`), rank != "slægt") |> 
+  mutate(arter_i_slægten = count-1) |> 
+  select(!c(count, n_filled, index))
+
+nrow(etleddet[etleddet$arter_i_slægten == 1, ])
+
+df_etleddet_fleretaxa <- etleddet |> 
+  filter(arter_i_slægten > 1)
+
+ss <- gs4_create(
+  name  = "2026_01_16_etledede_navne",
+  sheets = list(etleddet = etleddet)  # sheet name = "etleddet"
+)
