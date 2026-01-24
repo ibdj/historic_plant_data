@@ -1,31 +1,5 @@
 ### remember to convert to native google sheet
 
-DBF_navneliste_22_10_2025 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 22-10-2025.xlsx") |> 
-clean_names() 
-
-taxa <- DBF_navneliste_22_10_2025 |> 
-  mutate(verbatim_name = videnskabeligt_navn) |> 
-  filter(!is.na(accepterede_danske_navne)) |> 
-  mutate(
-    rang = case_when(
-      grepl("slægten", accepterede_danske_navne, ignore.case = TRUE) ~ "slægt",
-      grepl("var\\.", videnskabeligt_navn , ignore.case = TRUE) ~ "varitet",
-      grepl("subsp\\.", videnskabeligt_navn, ignore.case = TRUE) ~ "underart",
-      grepl("×", videnskabeligt_navn) ~ "hybrid",
-      TRUE ~ "art"
-    ),
-    rang_engelsk = case_when(
-      grepl("slægten", accepterede_danske_navne, ignore.case = TRUE) ~ "GENUS",
-      grepl("var\\.", videnskabeligt_navn , ignore.case = TRUE) ~ "VARIETY",
-      grepl("subsp\\.", videnskabeligt_navn, ignore.case = TRUE) ~ "SUBSPECIES",
-      grepl("×", videnskabeligt_navn) ~ "HYBRID",
-      TRUE ~ "SPECIES"
-    )
-  ) 
-  
-
-names(taxa)
-
 match_list <- taxa |>
   select(name = videnskabeligt_navn) |>  # rename in one go
   distinct()
