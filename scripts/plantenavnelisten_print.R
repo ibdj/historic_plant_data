@@ -1,30 +1,30 @@
 #### loading packages ####
-library(readxl)
-library(tidyverse)
-library(writexl)
-library(googlesheets4)
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load_gh("inbo/inborutils")
+pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, writexl)
 
 #### importing data #####
 DBF_navneliste_6_version_06_01_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 6. version 06-01-2026.xlsx")
 
-df <- DBF_navneliste_6_version_06_01_2026 |> 
+df <- DBF_navneliste_6_version_06_01_2026 |>
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
-df_clean <- df %>%
+df_clean <- df |>
   # Identify Latin genus names (no space)
   mutate(genus_marker = ifelse(
     !is.na(`Videnskabeligt navn`) & !grepl(" ", `Videnskabeligt navn`),
     `Videnskabeligt navn`,
     NA
-  )) %>%
+  )) |>
   # Identify Danish genus names (ending with "slægten")
   mutate(dansk_slaegt_marker = ifelse(
     grepl("slægten$", `Accepterede danske navne`),
     `Accepterede danske navne`,
     NA
-  )) %>%
+  )) |>
   # Fill both downwards
-  tidyr::fill(genus_marker, dansk_slaegt_marker, .direction = "down") %>%
+  tidyr::fill(genus_marker, dansk_slaegt_marker, .direction = "down") |>
   # Rename for clarity
   mutate(
     rank = case_when(
@@ -108,7 +108,7 @@ slægt_art_mismatch_kun <- slægt_art_mismatch |>
 kun_en_art <- df_clean |> 
   filter(count == 2, rank == "art")
 
-kun_en_art2 <- kun_en_art %>%
+kun_en_art2 <- kun_en_art |>
   mutate(
     expected = paste0(`Accepterede danske navne`, "slægten"),
     match = `Dansk slægt` == expected,
