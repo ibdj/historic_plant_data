@@ -65,6 +65,31 @@ write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FAL
 
 write_xlsx(df_clean,  "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.txt")
 
+#### matching til GBIF ########################################################
+
+taxa <- df |> clean_names() |>  
+  mutate(verbatim_name = videnskabeligt_navn) |> 
+  filter(!is.na(accepterede_danske_navne)) |> 
+  mutate(
+    rang = case_when(
+      grepl("slægten", accepterede_danske_navne, ignore.case = TRUE) ~ "slægt",
+      grepl("var\\.", videnskabeligt_navn , ignore.case = TRUE) ~ "varitet",
+      grepl("subsp\\.", videnskabeligt_navn, ignore.case = TRUE) ~ "underart",
+      grepl("×", videnskabeligt_navn) ~ "hybrid",
+      TRUE ~ "art"
+    ),
+    rang_engelsk = case_when(
+      grepl("slægten", accepterede_danske_navne, ignore.case = TRUE) ~ "GENUS",
+      grepl("var\\.", videnskabeligt_navn , ignore.case = TRUE) ~ "VARIETY",
+      grepl("subsp\\.", videnskabeligt_navn, ignore.case = TRUE) ~ "SUBSPECIES",
+      grepl("×", videnskabeligt_navn) ~ "HYBRID",
+      TRUE ~ "SPECIES"
+    )
+  ) 
+
+
+names(taxa)
+
 #### slægt-art mismatch ########################################################
 
 names(df_clean)
