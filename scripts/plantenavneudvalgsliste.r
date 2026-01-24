@@ -1,15 +1,4 @@
-### navneudvalgslist ####
-
-#### reading packages ##########################################################################################################
-
-if (!require("pacman")) install.packages("pacman")
-library(pacman)
-devtools::install_github("inbo/inborutils")
-pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils, janitor) 
-library(readxl)
-library(writexl)
-
-### remmeber to convert to native google sheet
+### remember to convert to native google sheet
 
 DBF_navneliste_22_10_2025 <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/dbf/navneudvalget/DBF navneliste 22-10-2025.xlsx") |> 
 clean_names() 
