@@ -55,11 +55,18 @@ print <- df_clean |>
          latex5 = "\\\\") |> 
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
+export <- df_clean |> 
+  filter(rank != "slægt") |> 
+  select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,genus) |> 
+  rename(Accepteret_dansk = `Accepterede danske navne`, Videnskabeligt_navn = `Videnskabeligt navn`, Dansk_slægt = `Dansk slægt`, Videnskabelig_slægt = genus)
+
 # Define an output path
 output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.txt"
+output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.csv"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
+write_delim(export, output_path_csv, delim = " ")
 
 write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
 
@@ -86,7 +93,6 @@ taxa <- df |> clean_names() |>
       TRUE ~ "SPECIES"
     )
   ) 
-
 
 names(taxa)
 
