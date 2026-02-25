@@ -5,9 +5,11 @@ pacman::p_load_gh("inbo/inborutils")
 pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, writexl)
 
 #### importing data #####
-DBF_navneliste_6_version_06_01_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 6. version 06-01-2026.xlsx")
+#DBF_navneliste_6_version_06_01_2026
+DBF_navneliste_7_version_24_02_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 7. version 20-01-2026.xlsx")
 
-df <- DBF_navneliste_6_version_06_01_2026 |>
+
+df <- DBF_navneliste_7_version_24_02_2026 |>
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
 df_clean <- df |>
@@ -61,8 +63,8 @@ export <- df_clean |>
   rename(Accepteret_dansk = `Accepterede danske navne`, Videnskabeligt_navn = `Videnskabeligt navn`, Dansk_slægt = `Dansk slægt`, Videnskabelig_slægt = genus)
 
 # Define an output path
-output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.txt"
-output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.csv"
+output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_02_2026.txt"
+output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_02_2026.csv"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
