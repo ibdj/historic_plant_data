@@ -57,6 +57,11 @@ print <- df_clean |>
          latex5 = "\\\\") |> 
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
+unique(df_clean$rank)
+
+rank <- df_clean |> 
+  group_by(rank) |> 
+  summarise(antal = n())
 
 # Define an output path
 output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_02_2026.txt"
@@ -161,7 +166,7 @@ arter <- df_clean |>
   filter(rank == "art")
 
 #### export af text filer ####
-export af
+
 export <- df_clean |>
   filter(rank != "slægt") |>
   select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,genus) |>
@@ -188,3 +193,20 @@ ss <- gs4_create(
   name  = "2026_01_16_etledede_navne",
   sheets = list(etleddet = etleddet)  # sheet name = "etleddet"
 )
+
+#### epitet kategorier ####
+
+epiteter <- slægt_art_mismatch |> 
+  group_by(epithet) |> 
+  summarise(count = n()) |> 
+  arrange(desc(count))
+
+#write_csv(epiteter, "epiteter_kategorier.csv")
+
+epiteter_kategorier <- read_csv("epiteter_kategorier.csv")
+  
+epiteter_kategorier$Kategori <- as.factor(epiteter_kategorier$Kategori)
+
+summary(epiteter_kategorier)
+
+
