@@ -57,10 +57,6 @@ print <- df_clean |>
          latex5 = "\\\\") |> 
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
-export <- df_clean |> 
-  filter(rank != "slægt") |> 
-  select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,genus) |> 
-  rename(Accepteret_dansk = `Accepterede danske navne`, Videnskabeligt_navn = `Videnskabeligt navn`, Dansk_slægt = `Dansk slægt`, Videnskabelig_slægt = genus)
 
 # Define an output path
 output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_02_2026.txt"
@@ -164,7 +160,12 @@ hybrider <- df_clean |>
 arter <- df_clean |> 
   filter(rank == "art")
 
-
+#### export af text filer ####
+export af
+export <- df_clean |>
+  filter(rank != "slægt") |>
+  select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,genus) |>
+  rename(Accepteret_dansk = `Accepterede danske navne`, Videnskabeligt_navn = `Videnskabeligt navn`, Dansk_slægt = `Dansk slægt`, Videnskabelig_slægt = genus)
 #### arter som hedder det samme som slægten ####################################
 
 etleddet_samme_slægt <- slægt_art_mismatch |> 
