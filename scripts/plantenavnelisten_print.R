@@ -101,9 +101,7 @@ names(taxa)
 
 #### slægt-art mismatch ########################################################
 
-names(df_clean)
-
-slægt_art_mismatch <- df_clean |> 
+slægt_art_mismatch <- taxa |> 
   mutate(
     slægt_navn = case_when(
       tolower(sub("slægten$", "", `Dansk slægt`)) == "pile" ~ "pil",
@@ -120,16 +118,17 @@ slægt_art_mismatch <- df_clean |>
       TRUE ~ tolower(sub("slægten$", "", `Dansk slægt`))
     ),
     genus_dk = sub("^[^- ]+[- ]+([^ ]+).*", "\\1", `Accepterede danske navne`),
-    epithet = ifelse(rank != "slægt" & grepl("[- ]", `Accepterede danske navne`),sub("([^- ]+[- ]).*", "\\1", `Accepterede danske navne`),""),
+    epitet = ifelse(rank != "slægt" & grepl("[- ]", `Accepterede danske navne`),sub("([^- ]+[- ]).*", "\\1", `Accepterede danske navne`),""),
     expected = case_when(
-      rank != "slægt" & epithet != "" ~ paste0(epithet, slægt_navn),
-      rank != "slægt" & epithet == ""  ~ paste0(toupper(substr(slægt_navn, 1, 1)), substr(slægt_navn, 2, nchar(slægt_navn))),
+      rank != "slægt" & epitet != "" ~ paste0(epitet, slægt_navn),
+      rank != "slægt" & epitet == ""  ~ paste0(toupper(substr(slægt_navn, 1, 1)), substr(slægt_navn, 2, nchar(slægt_navn))),
       TRUE ~ ""
     ),
     match    = ifelse(rank != "slægt", `Accepterede danske navne` == expected, ""),
     detail   = ifelse(rank != "slægt", ifelse(match, "", paste0("Kunne være ", expected, ", men er ", `Accepterede danske navne`)
       ),"")
   )
+names(slægt_art_mismatch )
 
 gs4_auth()
 gs4_create("slægt_art_mismatch_results", sheets = slægt_art_mismatch)
@@ -204,9 +203,25 @@ epiteter <- slægt_art_mismatch |>
 #write_csv(epiteter, "epiteter_kategorier.csv")
 
 epiteter_kategorier <- read_csv("epiteter_kategorier.csv")
-  
+names(epiteter_kategorier)  
 epiteter_kategorier$Kategori <- as.factor(epiteter_kategorier$Kategori)
 
 summary(epiteter_kategorier)
 
+names(slægt_art_mismatch)
 
+med_kategorier <- slægt_art_mismatch |> 
+  left_join(epiteter_kategorier, by = "epitet") |> 
+  filter(rank != "slægt") |> 
+  select(genus_dk,epitet,Kategori)
+
+summary(med_kategorier)
+
+
+med_kategorier_stats <- med_kategorier |> 
+  group_by(epitet,Kategori) |> 
+  summarise(count = n())
+
+med_kategorier_stats
+
+slægt_art_mismatch[slægt_art_mismatch$epithet == "Volga-", ]
