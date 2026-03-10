@@ -217,7 +217,6 @@ med_kategorier <- slægt_art_mismatch |>
 
 summary(med_kategorier)
 
-
 med_kategorier_stats <- med_kategorier |> 
   group_by(epitet,Kategori) |> 
   summarise(count = n())
