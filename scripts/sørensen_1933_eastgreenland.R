@@ -31,3 +31,6 @@ match_list <- taxa |>
   mutate(verbatimName = verbatim_name)
 
 str(match_list)
+
+matched_names <- taxa_pivot |> 
+  left_join(match_list, by = "verbatimName")
