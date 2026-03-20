@@ -13,7 +13,7 @@ taxa <- taxa |>
 
 taxa_pivot <- taxa |> 
   pivot_longer(cols = 5:ncol(taxa), names_to = "verbatimLocation", values_to = "presence") |> 
-  select(scientificName,verbatimLocation,presence) |> 
+  select(verbatimName,verbatimLocation,presence) |> 
   drop_na() |> 
   filter(presence != "NULL")
 
@@ -25,8 +25,9 @@ taxa_coordinates <- taxa_pivot |>
 #### matching with gbif ####
 
 match_list <- taxa |> 
-  select(scientificName) |> 
+  select(verbatimName) |> 
   name_backbone_checklist("taxon") |> 
-  select(usageKey,scientificName, verbatim_name, matchType, confidence)
+  select(usageKey,scientificName, verbatim_name, matchType, confidence) |> 
+  mutate(verbatimName = verbatim_name)
 
 str(match_list)
