@@ -12,3 +12,10 @@ names(taxa)
 
 redlist <- taxa |> 
   filter(international_kode %in% c("VU", "NT"))
+names(redlist)
+
+taxon_keys <- redlist$gbif_taxon_key |> 
+  as.numeric() |> 
+  na.omit() |> 
+  as.list()
+
