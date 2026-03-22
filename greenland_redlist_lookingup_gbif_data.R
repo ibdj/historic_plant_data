@@ -12,6 +12,7 @@ names(taxa)
 
 redlist <- taxa |> 
   filter(international_kode %in% c("VU", "NT"))
+
 names(redlist)
 
 taxon_keys <- redlist$gbif_taxon_key |> 
@@ -19,3 +20,33 @@ taxon_keys <- redlist$gbif_taxon_key |>
   na.omit() |> 
   as.list()
 
+#### setting up gbif ###########################################################
+# Read credentials from environment variables
+user <- Sys.getenv("GBIF_USER")
+pwd <- Sys.getenv("GBIF_PWD")
+email <- Sys.getenv("GBIF_EMAIL")
+
+# Optional: Safety check to ensure they aren't empty
+if (user == "" || pwd == "") {
+  stop("GBIF credentials missing. Please check your .Renviron file.")
+}
+
+#### starting the request #########################################################
+
+taxon_keys_vec <- unlist(taxon_keys)
+
+download_key <- occ_download(
+  pred_in("taxonKey", taxon_keys_vec),
+  pred("country", "GL"),
+  format = "SIMPLE_CSV"
+)
+
+occ_download_meta(download_key)
+
+#### downloading the data #####
+occ_download_get(download_key, path = "data")
+
+# Unzip the file
+unzip("data/0053643-260226173443078.zip", exdir = "data")
+
+gbif_data <- read_delim("data/0053643-260226173443078.csv", delim = "\t", escape_double = FALSE, trim_ws = TRUE)
