@@ -22,6 +22,8 @@ taxon_keys <- redlist$gbif_taxon_key |>
 
 #### reading the data from qgis ################################################
 
+#how to read a geopackage
+#natur_points <- sf::st_read("occurrences.gpkg")
 
 #### setting up gbif ###########################################################
 # Read credentials from environment variables
