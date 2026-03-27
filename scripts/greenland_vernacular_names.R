@@ -5,10 +5,12 @@
 library(googlesheets4)
 library(tidyverse)
 library(rgbif)
+library(janitor)
 
 #### importing #################################################################
 
-Nunatta_naasui <- read_sheet('https://docs.google.com/spreadsheets/d/1-SLBF6wwNXc1z3znjUNZuZQQ8XXx_iplr4sumrnwOn4/edit?gid=1576015470#gid=1576015470', sheet = 'Nunatta_naasui')
+Nunatta_naasui <- read_sheet('https://docs.google.com/spreadsheets/d/1-SLBF6wwNXc1z3znjUNZuZQQ8XXx_iplr4sumrnwOn4/edit?gid=1576015470#gid=1576015470', sheet = 'Nunatta_naasui') |> 
+  clean_names()
 
 names(Nunatta_naasui)
 
@@ -18,18 +20,21 @@ unique <- Nunatta_naasui |>
 
 #### seperating to one gl name pr row ##########################################
 
-Nunatta_naasui$source <- trimws(Nunatta_naasui$source)
+Nunatta_naasui$greenlandic_vernacular_name <- trimws(Nunatta_naasui$greenlandic_vernacular_name)
 
-max_splits <- max(sapply(strsplit(as.character(Nunatta_naasui$source), ","), length))
+max_splits <- max(sapply(strsplit(as.character(Nunatta_naasui$greenlandic_vernacular_name), ","), length))
 
 col_names <- paste0("col", seq_len(max_splits))
 
-seperate <- separate(Nunatta_naasui, source, into = col_names, sep = ",", fill = "right")
+seperate <- separate(Nunatta_naasui, greenlandic_vernacular_name, into = col_names, sep = ",", fill = "right")
 
 Nunatta_naasui_longer <- seperate |> 
-  pivot_longer(cols = col1:ncol(seperate), names_to = "placering", values_to = "grl_name", values_drop_na = TRUE) |> 
+  pivot_longer(cols = col1:col3, names_to = "placering", values_to = "grl_name", values_drop_na = TRUE) |> 
   mutate(name = taxon,
          grl_name = trimws(grl_name))
+
+
+#### matching to gbif ##########################################
 
 gbif_matched <- Nunatta_naasui_longer |> 
   distinct(taxon) |> 
@@ -37,8 +42,7 @@ gbif_matched <- Nunatta_naasui_longer |>
   mutate(taxon = canonicalName)
 
 matched_list <- Nunatta_naasui_longer |> 
-  left_join(gbif_matched, by = "taxon") |> 
-  drop_na("name")
+  left_join(gbif_matched, by = "taxon")
 
 #### list of colomns in the extension of vernacular names ######################
 #https://rs.gbif.org/extension/gbif/1.0/vernacularname.xml
