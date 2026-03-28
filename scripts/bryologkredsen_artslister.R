@@ -44,4 +44,9 @@ stats <- all_data |>
   group_by(filnavn) |> 
   reframe(count = n())
 
+nrow(artslister)
+mean(stats$count)
 mean(stats$count)*nrow(artslister)
+
+all_data_with_notes <- all_data |> 
+  filter(!is.na(notes))
