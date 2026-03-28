@@ -50,3 +50,6 @@ mean(stats$count)*nrow(artslister)
 
 all_data_with_notes <- all_data |> 
   filter(!is.na(notes))
+
+taxon_list <- all_data |> 
+  distinct(taxon)
