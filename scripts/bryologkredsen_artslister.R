@@ -34,8 +34,14 @@ all_data <- files %>%
   map_dfr(~{
     read_delim(.x, delim = ";", escape_double = FALSE, trim_ws = TRUE) %>%
       rename(taxon = 1) %>%
-      mutate(kilde = basename(.x) %>% 
+      mutate(filnavn = basename(.x) %>% 
                str_remove("\\.csv$"))
   })
 
 all_data
+
+stats <- all_data |> 
+  group_by(filnavn) |> 
+  reframe(count = n())
+
+mean(stats$count)*nrow(artslister)
