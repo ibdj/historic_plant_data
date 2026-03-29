@@ -7,6 +7,7 @@ library(tidyverse)
 library(rgbif)
 library(janitor)
 library(fs)
+library(stringdist)
 
 #### importing #################################################################
 
@@ -16,6 +17,8 @@ artslister <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtk
          area = as.factor(area),
          observer = as.factor(observer))
 
+new_sheet <- gs4_create("my-sheet-name")
+sheet_write(data = all_data, ss = new_sheet, sheet = "Sheet1")
 
 names(artslister)
 
@@ -53,3 +56,14 @@ all_data_with_notes <- all_data |>
 
 taxon_list <- all_data |> 
   distinct(taxon)
+
+check <- all_data |> 
+  filter(str_count(taxon, " ") > 1)
+
+gbif_matched <- taxon_list |> 
+  name_backbone_checklist("taxon") |> 
+  mutate(kingdom = as.factor(kingdom))
+
+summary(gbif_matched)
+
+#### find typos ####
