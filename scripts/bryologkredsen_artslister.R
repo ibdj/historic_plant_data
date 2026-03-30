@@ -7,7 +7,7 @@ library(tidyverse)
 library(rgbif)
 library(janitor)
 library(fs)
-library(stringdist)
+library(stringdist) # to find potential typos
 
 #### importing #################################################################
 
@@ -75,7 +75,7 @@ summary(gbif_matched)
 
 #### find typos ################################################################
 
-# Assuming your column is called 'text' in dataframe all_data
+# Function to find typoes (calculating how many characters it would take to change)
 compare_column_typos <- function(df, col_name, threshold = 0.8) {
   # Get the column as character vector
   col_data <- df[[col_name]] |> as.character()
@@ -101,7 +101,7 @@ compare_column_typos <- function(df, col_name, threshold = 0.8) {
     arrange(desc(similarity))
 }
 
-# Run it
+# Find typoes with the function above
 typos <- compare_column_typos(taxon_list, "taxon", threshold = 0.8)
 typos
 
