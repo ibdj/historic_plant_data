@@ -34,3 +34,9 @@ summary(taxa)
 unique <- taxa |> 
   distinct(sci_name) |> 
   rename("name" = "sci_name")
+
+#### matching with gbif ########################################################
+
+gbif_matched <- unique |> 
+  name_backbone_checklist()
+  
