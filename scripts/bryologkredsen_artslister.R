@@ -72,9 +72,13 @@ all_data_with_notes <- all_data |>
 check <- all_data |> 
   filter(str_count(taxon, " ") > 1)
 
+# Assuming taxon_list has a column called 'taxon' with scientific names
 gbif_matched <- taxon_list |> 
-  name_backbone_checklist("taxon") |> 
-  mutate(kingdom = as.factor(kingdom))
+  rowwise() |> 
+  mutate(
+    backbone_data = list(name_backbone(taxon))
+  ) |> 
+  unnest_wider(backbone_data, names_sep = "_")
 
 summary(gbif_matched)
 
@@ -151,4 +155,15 @@ split <- taxon_list |>
     # Fill empty rank cells with "species"
     rank = if_else(is.na(rank), "species", rank)
   ) |> 
-  select(genus, epithet, rank, infraspecific_epithet)
+  select(taxon, genus, epithet, rank, infraspecific_epithet)
+
+taxonlist2 <- split |> 
+  mutate(name = paste0(genus, ifelse(is.na(epithet), "", paste0(" ", epithet)))) |> 
+  select(name)
+
+gbif_matched2 <- taxonlist2 |> 
+  rowwise() |> 
+  mutate(
+    backbone_data = list(name_backbone(name))
+  ) |> 
+  unnest_wider(backbone_data, names_sep = "_")
