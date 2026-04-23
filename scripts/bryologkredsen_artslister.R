@@ -11,15 +11,15 @@ library(stringdist) # to find potential typos
 
 #### importing #################################################################
 
-meta_data <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0', sheet = 'meta') |> 
-  drop_na(lokalitet) |> 
+meta_data <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0', sheet = 'tur_meta') |> 
+  drop_na(lokalitet1) |> 
   mutate(region = as.factor(region),
-         area = as.factor(area),
+         area = as.factor(lokalitet1),
          observer = as.factor(observer))
 
-koordinator <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0', sheet = 'koordinator') |> 
+#koordinator <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0', sheet = 'koordinator') |> 
   #drop_na(lokalitet) |> 
-  mutate()
+ # mutate()
 
 names(meta_data)
 
@@ -40,17 +40,22 @@ files <- dir_ls(dir_path, glob = "*.csv")
 all_data <- files %>%
   set_names() %>%
   map_dfr(~{
-    read.csv(
-      .x, 
-      sep = ";", 
-      fill = TRUE,           # This works in read.csv()
-      stringsAsFactors = FALSE,
-      strip.white = TRUE     # Equivalent to trim_ws
+    read_delim(
+      .x,
+      delim = ";",
+      skip = 1,                    # Skip first line (metadata)
+      col_names = c("taxon", "syn", "habitat", "notes", "edits"),  # Force 5 columns
+      na = c("", "NA"),
+      trim_ws = TRUE
     ) %>%
-      rename(taxon = 1) %>%
-      mutate(tur_id = basename(.x) %>% 
-               str_remove("\\.csv$"))
+      mutate(tur_id = basename(.x) %>% str_remove("\\.csv$")) %>%
+      filter(!is.na(taxon))  # Remove any empty taxon rows
   }) |> 
+  mutate(verbatimName = taxon, habitat_species = habitat)
+
+summary(all_data)
+
+all_data_split <- all_data |> 
   mutate(
     # Updated regex pattern to include 'sect' and 'subsect'
     match_result = str_match(
@@ -75,11 +80,39 @@ all_data <- files %>%
   ) |> 
   mutate(taxon = paste0(genus, ifelse(is.na(epithet), "", paste0(" ", epithet)))) |>
   mutate(across(everything(), ~ifelse(trimws(.) == "", NA, .))) |> 
-  rename(habitat_species = habitat)
+  select(verbatimName, genus, epithet, rank, infraspecific_epithet, syn, habitat_species, edits, tur_id)
 
-all_data
+names(all_data_split)
+
+rows_with_semicolon <- all_data %>%
+  rowwise() %>%
+  filter(any(str_detect(c_across(-tur_id), ";"))) %>%
+  ungroup()
+
+rows_with_semicolon
+
+missing_habitat <- files %>%
+  set_names() %>%
+  map_dfr(~{
+    first_line <- read_lines(.x, n_max = 1)
+    data.frame(
+      file = basename(.x),
+      has_habitat = grepl(";habitat;", first_line),
+      first_line = first_line
+    )
+  }) %>%
+  filter(!has_habitat)
+
+print(missing_habitat)
 
 names(all_data)
+
+tur_ids <- all_data |> 
+  distinct(tur_id)
+
+non <- all_data[ is.na(suppressWarnings(as.numeric(rownames(all_data)))), ]
+
+#### organising taxa############################################################
 
 split <- all_data |> 
   mutate(
@@ -104,9 +137,26 @@ split <- all_data |>
     # Fill empty rank cells with "species"
     rank = if_else(is.na(rank), "species", rank)
   ) |> 
-  select(taxon, syn, genus, epithet, rank, notes, infraspecific_epithet, filnavn) |> 
-  left_join(meta_data, by = "filnavn") |> 
-  left_join(koordinator, by = "lokalitetsnavn")
+  select(taxon, syn, genus, epithet, rank, notes, infraspecific_epithet, tur_id) |> 
+  left_join(meta_data, by = "tur_id")
+
+tur_ids <- meta_data |> 
+  distinct(tur_id)
+
+summary(split)
+
+df1_only <- all_data %>% anti_join(all_data, by = "tur_id")
+df2_only <- split %>% anti_join(split, by = "tur_id")
+  
+df1_only <- setdiff(all_data, split)
+
+# Rows in df2 not in df1  
+df2_only <- setdiff(all_data, split)
+
+nas <- split |> 
+  filter(is.na(region))
+  
+  
 
 taxon_list <- all_data |> 
   group_by(taxon) |> 
@@ -114,7 +164,7 @@ taxon_list <- all_data |>
   drop_na()
 
 stats <- all_data |> 
-  group_by(filnavn) |> 
+  group_by(tur_id) |> 
   reframe(count = n())
 
 nrow(meta_data)
@@ -136,6 +186,21 @@ gbif_matched <- taxon_list |>
   unnest_wider(backbone_data, names_sep = "_")
 
 summary(gbif_matched)
+
+#### writing to the google doc #####
+
+
+sheet_write(
+  data = split,
+  ss = "https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0",
+  sheet = "taxon_list_raw"
+)
+
+sheet_write(
+  data = gbif_matched,
+  ss = "https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0",
+  sheet = "gbif_matched"
+)
 
 #### find typos ################################################################
 
