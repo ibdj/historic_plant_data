@@ -8,6 +8,15 @@ library(rgbif)
 library(janitor)
 library(fs)
 library(stringdist) # to find potential typos
+library(stringi) # to fix issues with string charaters in the tur id
+
+#### functions to fix names ####
+
+normalize_id <- function(x) {
+  x |>
+    stri_trans_nfc() |>     # normalize Unicode (fix å issue)
+    trimws()               # remove stray whitespace
+}
 
 #### importing #################################################################
 
@@ -15,11 +24,9 @@ meta_data <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko
   drop_na(lokalitet1) |> 
   mutate(region = as.factor(region),
          area = as.factor(lokalitet1),
-         observer = as.factor(observer))
-
-#koordinator <- read_sheet('https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0', sheet = 'koordinator') |> 
-  #drop_na(lokalitet) |> 
- # mutate()
+         observer = as.factor(observer)) |> 
+  distinct() |> 
+  mutate(tur_id = normalize_id(tur_id))
 
 names(meta_data)
 
@@ -54,7 +61,61 @@ all_data <- files %>%
   mutate(verbatimName = taxon, habitat_species = habitat)
 
 summary(all_data)
+#### inspecting tur id #########################################################
 
+x <- problem_ids$tur_id[1]
+y <- meta_data$tur_id[which(meta_data$tur_id == x)[1]]
+
+charToRaw(x)
+charToRaw(y)
+
+nchar(x)
+nchar(y)
+
+stri_escape_unicode(x)
+stri_escape_unicode(y)
+
+clean_id <- function(x) {
+  x |>
+    str_trim() |>                               # remove leading/trailing whitespace
+    str_squish() |>                             # normalize internal spaces
+    str_replace_all("\\u00A0", " ") |>           # replace non-breaking spaces
+    stri_trans_general("Latin-ASCII")            # normalize encoding (æ → ae, etc.)
+}
+
+all_data_split <- all_data_split |> 
+  mutate(tur_id_clean = clean_id(tur_id))
+
+meta_data <- meta_data |> 
+  mutate(tur_id_clean = clean_id(tur_id))
+
+dists <- stringdist(x, meta_data$tur_id, method = "lv")
+
+meta_data |> 
+  mutate(dist = dists) |> 
+  arrange(dist) |> 
+  slice(1:5)
+
+clean_id <- function(x) {
+  x |>
+    stri_trans_nfc() |>        # normalize Unicode
+    str_replace_all("\\u00A0", " ") |>  # fix non-breaking spaces
+    str_squish() |>            # normalize whitespace
+    trimws()
+}
+
+all_data_split2 <- all_data_split |>
+  mutate(tur_id_clean = clean_id(tur_id))
+
+meta_data2 <- meta_data |>
+  mutate(tur_id_clean = clean_id(tur_id))
+
+anti_join(all_data_split2, meta_data2, by = "tur_id_clean") |> 
+  nrow()
+
+
+
+#### organising data ###########################################################
 all_data_split <- all_data |> 
   mutate(
     # Updated regex pattern to include 'sect' and 'subsect'
@@ -80,7 +141,19 @@ all_data_split <- all_data |>
   ) |> 
   mutate(taxon = paste0(genus, ifelse(is.na(epithet), "", paste0(" ", epithet)))) |>
   mutate(across(everything(), ~ifelse(trimws(.) == "", NA, .))) |> 
-  select(verbatimName, genus, epithet, rank, infraspecific_epithet, syn, habitat_species, edits, tur_id)
+  select(verbatimName, genus, epithet, rank, infraspecific_epithet, syn, habitat_species, edits, tur_id) |> 
+  mutate(tur_id = normalize_id(tur_id))
+  
+all_data_split_join <- all_data_split |>   
+  left_join(meta_data, by = "tur_id")
+
+
+names(all_data_split_join)
+
+names(meta_data)
+
+nas <- all_data_split_join |> 
+  filter(is.na(region))
 
 names(all_data_split)
 
@@ -91,54 +164,6 @@ rows_with_semicolon <- all_data %>%
 
 rows_with_semicolon
 
-missing_habitat <- files %>%
-  set_names() %>%
-  map_dfr(~{
-    first_line <- read_lines(.x, n_max = 1)
-    data.frame(
-      file = basename(.x),
-      has_habitat = grepl(";habitat;", first_line),
-      first_line = first_line
-    )
-  }) %>%
-  filter(!has_habitat)
-
-print(missing_habitat)
-
-names(all_data)
-
-tur_ids <- all_data |> 
-  distinct(tur_id)
-
-non <- all_data[ is.na(suppressWarnings(as.numeric(rownames(all_data)))), ]
-
-#### organising taxa############################################################
-
-split <- all_data |> 
-  mutate(
-    # Updated regex pattern to include 'sect' and 'subsect'
-    match_result = str_match(
-      str_squish(taxon),
-      "^([[:alpha:]]+)(?:\\s+([[:alpha:]-]+))?(?:\\s+(spp?\\.?))?(?:\\s+(ssp|subsp|var|f|fo|sect|subsect)\\.?)?(?:\\s+([[:alpha:]]+))?$"
-    )
-  ) |> 
-  mutate(
-    genus = match_result[, 2],
-    epithet = match_result[, 3],
-    rank = case_when(
-      !is.na(match_result[, 4]) ~ match_result[, 4],  # sp. or spp.
-      !is.na(match_result[, 5]) ~ match_result[, 5],  # ssp, var, f, fo, sect, subsect
-      TRUE ~ NA_character_
-    ),
-    infraspecific_epithet = match_result[, 6]
-  ) |> 
-  mutate(
-    rank = str_to_lower(rank),
-    # Fill empty rank cells with "species"
-    rank = if_else(is.na(rank), "species", rank)
-  ) |> 
-  select(taxon, syn, genus, epithet, rank, notes, infraspecific_epithet, tur_id) |> 
-  left_join(meta_data, by = "tur_id")
 
 tur_ids <- meta_data |> 
   distinct(tur_id)
@@ -156,8 +181,6 @@ df2_only <- setdiff(all_data, split)
 nas <- split |> 
   filter(is.na(region))
   
-  
-
 taxon_list <- all_data |> 
   group_by(taxon) |> 
   reframe(count = n()) |> 
@@ -189,18 +212,15 @@ summary(gbif_matched)
 
 #### writing to the google doc #####
 
-
 sheet_write(
-  data = split,
+  data = all_data_split,
   ss = "https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0",
-  sheet = "taxon_list_raw"
-)
+  sheet = "taxon_list_raw")
 
 sheet_write(
   data = gbif_matched,
   ss = "https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0",
-  sheet = "gbif_matched"
-)
+  sheet = "gbif_matched")
 
 #### find typos ################################################################
 
