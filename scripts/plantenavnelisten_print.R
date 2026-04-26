@@ -4,12 +4,13 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load_gh("inbo/inborutils")
 pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, writexl)
 
-#### importing data #####
+#### importing data ############################################################
 #DBF_navneliste_6_version_06_01_2026
-DBF_navneliste_7_version_24_02_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 7. version 20-01-2026.xlsx")
+#DBF_navneliste_7_version_24_02_2026 
+DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+seneste_liste <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
 
-
-df <- DBF_navneliste_7_version_24_02_2026 |>
+df <- seneste_liste |>
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
 df_clean <- df |>
@@ -57,6 +58,9 @@ print <- df_clean |>
          latex5 = "\\\\") |> 
   select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
+anden_export <- print |> 
+  select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,genus)
+
 unique(df_clean$rank)
 
 rank <- df_clean |> 
@@ -64,8 +68,8 @@ rank <- df_clean |>
   summarise(antal = n())
 
 # Define an output path
-output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_02_2026.txt"
-output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_02_2026.csv"
+output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_04_21.txt"
+output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_04_21.csv"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
@@ -73,7 +77,7 @@ write_delim(export, output_path_csv, delim = " ")
 
 write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
 
-write_xlsx(df_clean,  "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print06-01-2026.txt")
+write_xlsx(anden_export,  "/Users/ibdj/Nextcloud/Botanisk Forening/Hovedbestyrelsen/Udvalg og samarbejde/Navneudvalget/DBF_navneliste_print2026_04_21.xlsx")
 
 #### matching til GBIF ########################################################
 
