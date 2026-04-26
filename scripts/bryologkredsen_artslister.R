@@ -34,9 +34,6 @@ lokaliteter <- meta_data |>
   group_by(lokalitetsnavn,lat) |> 
   reframe(count = n())
 
-str(meta_data)
-summary(meta_data)
-
 # Define the directory path
 dir_path <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/bryologkredsen/artslister_txt/"
 
@@ -59,60 +56,6 @@ all_data <- files %>%
       filter(!is.na(taxon))  # Remove any empty taxon rows
   }) |> 
   mutate(verbatimName = taxon, habitat_species = habitat)
-
-summary(all_data)
-#### inspecting tur id #########################################################
-
-x <- problem_ids$tur_id[1]
-y <- meta_data$tur_id[which(meta_data$tur_id == x)[1]]
-
-charToRaw(x)
-charToRaw(y)
-
-nchar(x)
-nchar(y)
-
-stri_escape_unicode(x)
-stri_escape_unicode(y)
-
-clean_id <- function(x) {
-  x |>
-    str_trim() |>                               # remove leading/trailing whitespace
-    str_squish() |>                             # normalize internal spaces
-    str_replace_all("\\u00A0", " ") |>           # replace non-breaking spaces
-    stri_trans_general("Latin-ASCII")            # normalize encoding (æ → ae, etc.)
-}
-
-all_data_split <- all_data_split |> 
-  mutate(tur_id_clean = clean_id(tur_id))
-
-meta_data <- meta_data |> 
-  mutate(tur_id_clean = clean_id(tur_id))
-
-dists <- stringdist(x, meta_data$tur_id, method = "lv")
-
-meta_data |> 
-  mutate(dist = dists) |> 
-  arrange(dist) |> 
-  slice(1:5)
-
-clean_id <- function(x) {
-  x |>
-    stri_trans_nfc() |>        # normalize Unicode
-    str_replace_all("\\u00A0", " ") |>  # fix non-breaking spaces
-    str_squish() |>            # normalize whitespace
-    trimws()
-}
-
-all_data_split2 <- all_data_split |>
-  mutate(tur_id_clean = clean_id(tur_id))
-
-meta_data2 <- meta_data |>
-  mutate(tur_id_clean = clean_id(tur_id))
-
-anti_join(all_data_split2, meta_data2, by = "tur_id_clean") |> 
-  nrow()
-
 
 
 #### organising data ###########################################################
@@ -145,17 +88,15 @@ all_data_split <- all_data |>
   mutate(tur_id = normalize_id(tur_id))
   
 all_data_split_join <- all_data_split |>   
-  left_join(meta_data, by = "tur_id")
+  left_join(meta_data, by = "tur_id") |> 
+  mutate(region = as.factor(region))
 
-
-names(all_data_split_join)
-
-names(meta_data)
+summary(all_data_split_join)
 
 nas <- all_data_split_join |> 
-  filter(is.na(region))
-
-names(all_data_split)
+  filter(is.na(region)) |> 
+  group_by(tur_id) |> 
+  reframe(count = n())
 
 rows_with_semicolon <- all_data %>%
   rowwise() %>%
@@ -168,21 +109,9 @@ rows_with_semicolon
 tur_ids <- meta_data |> 
   distinct(tur_id)
 
-summary(split)
-
-df1_only <- all_data %>% anti_join(all_data, by = "tur_id")
-df2_only <- split %>% anti_join(split, by = "tur_id")
   
-df1_only <- setdiff(all_data, split)
-
-# Rows in df2 not in df1  
-df2_only <- setdiff(all_data, split)
-
-nas <- split |> 
-  filter(is.na(region))
-  
-taxon_list <- all_data |> 
-  group_by(taxon) |> 
+taxon_list <- all_data_split_join |> 
+  group_by(verbatimName) |> 
   reframe(count = n()) |> 
   drop_na()
 
