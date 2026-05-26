@@ -1,9 +1,9 @@
-
-install.packages("pdftools")
+#install.packages("tesseract")
+#install.packages("pdftools")
 library(pdftools)
 library(tidyverse)
-install.packages("tesseract")
 library(tesseract)
+library(magick)
 
 # Set your main folder path
 main_folder <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek"
@@ -104,3 +104,16 @@ split_files$text <- sapply(split_files$full_path, function(path) {
     text
   }, error = function(e) NA)
 })
+
+
+h <- hist(stats_split$count, breaks = seq(min(stats_split$count), max(stats_split$count) + 5, by = 5), plot = FALSE)
+
+hist(stats_split$count, breaks = seq(min(stats_split$count), max(stats_split$count) + 5, by = 5), xaxt = "n")
+
+axis(5, at = seq(5, 100), labels = FALSE, tck = -0.02)
+axis(5, at = h$mids)
+
+###### extrating ocr ###########################################################
+
+
+
