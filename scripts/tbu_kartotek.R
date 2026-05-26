@@ -115,5 +115,24 @@ axis(5, at = h$mids)
 
 ###### extrating ocr ###########################################################
 
+# Test on one file
+img_path <- pdftools::pdf_convert(split_files$full_path[1], dpi = 300, verbose = FALSE)
+image <- image_read(img_path)
+info  <- image_info(image)
 
+# Full OCR
+full_text <- ocr(image, engine = tesseract("dan"))
+
+# Crop upper right for district only
+cropped <- image_crop(image, geometry = paste0(
+  round(info$width * 0.35), "x",
+  round(info$height * 0.08), "+",
+  round(info$width * 0.65), "+0"
+))
+distr_text <- ocr(cropped, engine = tesseract("dan"))
+distr_num  <- gsub(".*Distr\\.?\\s*(\\d+).*", "\\1", distr_text)
+
+cat("Full text:\n", full_text)
+cat("District:", distr_num)
+file.remove(img_path)
 
