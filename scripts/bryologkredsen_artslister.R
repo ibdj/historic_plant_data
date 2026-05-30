@@ -55,7 +55,7 @@ all_data <- files %>%
       mutate(tur_id = basename(.x) %>% str_remove("\\.csv$")) %>%
       filter(!is.na(taxon))  # Remove any empty taxon rows
   }) |> 
-  mutate(verbatimName = taxon, habitat_species = habitat)
+  mutate(habitat_species = habitat)
 
 
 #### organising data ###########################################################
@@ -82,7 +82,7 @@ all_data_split <- all_data |>
     # Fill empty rank cells with "species"
     rank = if_else(is.na(rank), "species", rank)
   ) |> 
-  mutate(taxon = paste0(genus, ifelse(is.na(epithet), "", paste0(" ", epithet)))) |>
+  mutate(verbatimName = paste0(genus, ifelse(is.na(epithet), "", paste0(" ", epithet)))) |>
   mutate(across(everything(), ~ifelse(trimws(.) == "", NA, .))) |> 
   select(verbatimName, genus, epithet, rank, infraspecific_epithet, syn, habitat_species, edits, tur_id) |> 
   mutate(tur_id = normalize_id(tur_id))
@@ -98,6 +98,7 @@ nas <- all_data_split_join |>
   group_by(tur_id) |> 
   reframe(count = n())
 
+#### error checking ############################################################
 rows_with_semicolon <- all_data %>%
   rowwise() %>%
   filter(any(str_detect(c_across(-tur_id), ";"))) %>%
@@ -105,19 +106,17 @@ rows_with_semicolon <- all_data %>%
 
 rows_with_semicolon
 
-
 tur_ids <- meta_data |> 
   distinct(tur_id)
 
-  
+check <- all_data_split_join |> 
+  filter(str_count(verbatimName, " ") > 1)
+
+#### taxon list and gbif match #################################################  
 taxon_list <- all_data_split_join |> 
   group_by(verbatimName) |> 
   reframe(count = n()) |> 
   drop_na()
-
-stats <- all_data |> 
-  group_by(tur_id) |> 
-  reframe(count = n())
 
 nrow(meta_data)
 mean(stats$count)
@@ -126,14 +125,11 @@ mean(stats$count)*nrow(meta_data)
 all_data_with_notes <- all_data |> 
   filter(!is.na(notes))
 
-check <- all_data |> 
-  filter(str_count(taxon, " ") > 1)
-
 # Assuming taxon_list has a column called 'taxon' with scientific names
 gbif_matched <- taxon_list |> 
   rowwise() |> 
   mutate(
-    backbone_data = list(name_backbone(taxon))
+    backbone_data = list(name_backbone(verbatimName, kingdom = "Plantae"))
   ) |> 
   unnest_wider(backbone_data, names_sep = "_")
 
@@ -142,7 +138,7 @@ summary(gbif_matched)
 #### writing to the google doc #####
 
 sheet_write(
-  data = all_data_split,
+  data = all_data_split_join,
   ss = "https://docs.google.com/spreadsheets/d/1sOgdCCPdk0qTtko0bapGjsNSxdyQULbShGpGfimuuqw/edit?gid=0#gid=0",
   sheet = "taxon_list_raw")
 
