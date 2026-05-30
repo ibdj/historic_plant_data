@@ -1,5 +1,7 @@
-#install.packages("tesseract")
+#install.packages("tesseract", type = "binary")
 #install.packages("pdftools")
+#remove.packages("dplyr")
+install.packages("dplyr", type = "binary")
 library(pdftools)
 library(tidyverse)
 library(tesseract)
