@@ -11,7 +11,8 @@ packageVersion("rgbif")
 
 #### importing #####
 
-porsild1910 <- read_sheet('https://docs.google.com/spreadsheets/d/1raYqt1BoLer6AP-bACSlEvHvxYcpnEGdKOXSew6oMSo/edit?gid=0#gid=0', sheet = 'taxa') |> select("name")
+porsild1910 <- read_sheet('https://docs.google.com/spreadsheets/d/1raYqt1BoLer6AP-bACSlEvHvxYcpnEGdKOXSew6oMSo/edit?gid=0#gid=0', sheet = 'taxa') |> 
+  select(name)
 
 matched_names <- name_backbone_checklist(porsild1910, "taxon")
 sapply(matched_names, is.list)
