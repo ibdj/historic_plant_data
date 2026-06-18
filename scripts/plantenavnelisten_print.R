@@ -13,10 +13,10 @@ pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, 
 DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
 #seneste_liste <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
 
-df <- DBF_navneliste_9_version_21_04_2026 |>
+df_v9 <- DBF_navneliste_9_version_21_04_2026 |>
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
-df_clean <- df |>
+df_clean_v9 <- df_v9 |>
   # Identify Latin genus names (no space)
   mutate(genus_marker = ifelse(
     !is.na(`Videnskabeligt navn`) & !grepl(" ", `Videnskabeligt navn`),
@@ -233,3 +233,71 @@ med_kategorier_stats
 slægt_art_mismatch[slægt_art_mismatch$epithet == "Volga-", ]
 
 #### comparing files ####
+
+library(stringdist)
+
+v8 <- df_clean_v8
+v9 <- df_clean_v9
+v8 <- ungroup(v8)
+v9 <- ungroup(v9)
+key <- "Videnskabeligt navn"
+common_cols <- intersect(names(v8), names(v9))
+threshold   <- 0.10                          # tune after inspecting fuzzy matches
+# columns that DECIDE whether a row changed
+compare_cols <- c("Accepterede danske navne", "Videnskabeligt navn")
+
+row_str <- function(df) do.call(paste, c(df[compare_cols], sep = "\u0001"))
+v8$.row <- row_str(v8)
+v9$.row <- row_str(v9)
+
+## Phase 1 — match on scientific name (clears every row whose name is unchanged)
+shared <- intersect(v8[[key]], v9[[key]])
+i8 <- match(shared, v8[[key]]); i9 <- match(shared, v9[[key]])
+unchanged_keys <- shared[v8$.row[i8] == v9$.row[i9]]
+changed_keys   <- setdiff(shared, unchanged_keys)
+
+orphan_old_rows <- which(!(v8[[key]] %in% shared))   # v8 rows: removed or name-corrected
+orphan_new_rows <- which(!(v9[[key]] %in% shared))   # v9 rows: added or name-corrected
+old_orphan <- v8[orphan_old_rows, , drop = FALSE]
+new_orphan <- v9[orphan_new_rows, , drop = FALSE]
+
+## Phase 2 — fuzzy match orphans on edit distance
+pairs <- data.frame(old = integer(), new = integer(), dist = numeric())
+if (nrow(old_orphan) && nrow(new_orphan)) {
+  Dn <- stringdistmatrix(old_orphan$.row, new_orphan$.row, method = "lv") /
+    outer(nchar(old_orphan$.row), nchar(new_orphan$.row), pmax)
+  repeat {
+    if (all(is.na(Dn)) || min(Dn, na.rm = TRUE) > threshold) break
+    ij <- which(Dn == min(Dn, na.rm = TRUE), arr.ind = TRUE)[1, ]
+    pairs <- rbind(pairs, data.frame(old = ij[1], new = ij[2], dist = Dn[ij[1], ij[2]]))
+    Dn[ij[1], ] <- NA; Dn[, ij[2]] <- NA
+  }
+}
+matched_new_v9 <- orphan_new_rows[pairs$new]
+matched_old_v8 <- orphan_old_rows[pairs$old]
+
+## ---- Build one consolidated table, relative to the NEW version ----
+out_new <- v9[, common_cols, drop = FALSE]
+out_new$change_type   <- "Unchanged"
+out_new$previous_name <- NA_character_
+out_new$edit_distance <- NA_real_
+
+out_new$change_type[v9[[key]] %in% changed_keys] <- "Content changed since last version"
+out_new$change_type[orphan_new_rows]             <- "Added since last version"
+out_new$change_type[matched_new_v9]              <- "Name/spelling changed since last version"
+out_new$previous_name[matched_new_v9]            <- v8[[key]][matched_old_v8]
+out_new$edit_distance[matched_new_v9]            <- round(pairs$dist, 3)
+
+removed_old_v8 <- setdiff(orphan_old_rows, matched_old_v8)
+out_removed <- v8[removed_old_v8, common_cols, drop = FALSE]
+out_removed$change_type   <- "Removed since last version"
+out_removed$previous_name <- NA_character_
+out_removed$edit_distance <- NA_real_
+
+
+changes <- bind_rows(out_new, out_removed) |>
+  relocate(change_type, previous_name, edit_distance) |>
+  arrange(change_type, .data[[key]]) |>
+  filter(!(change_type %in% c("Unchanged")))
+
+count(changes, change_type)   # overview of how many fell into each category
