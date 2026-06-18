@@ -2,15 +2,18 @@
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load_gh("inbo/inborutils")
-pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, writexl)
+pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, writexl, diffobj)
 
 #### importing data ############################################################
 #DBF_navneliste_6_version_06_01_2026
 #DBF_navneliste_7_version_24_02_2026 
-DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
-seneste_liste <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+#DBF_navneliste_8_version_21_04_2026 
 
-df <- seneste_liste |>
+#DBF_navneliste_9_version_21_05_2026 <- read_excel(file.choose())
+DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+#seneste_liste <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+
+df <- DBF_navneliste_9_version_21_04_2026 |>
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
 df_clean <- df |>
@@ -68,8 +71,8 @@ rank <- df_clean |>
   summarise(antal = n())
 
 # Define an output path
-output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_04_21.txt"
-output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_04_21.csv"
+output_path <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_05_21.txt"
+output_path_csv <- "~/Google Drive/My Drive/navneudvalget/DBF_navneliste_print_2026_05_21.csv"
 
 # Write to Excel
 write_delim(print, output_path, delim = " ")
@@ -228,3 +231,5 @@ med_kategorier_stats <- med_kategorier |>
 med_kategorier_stats
 
 slægt_art_mismatch[slægt_art_mismatch$epithet == "Volga-", ]
+
+#### comparing files ####
