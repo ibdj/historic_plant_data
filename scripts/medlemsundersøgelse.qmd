@@ -1,0 +1,130 @@
+---
+title: "Medlemsundersøgelsesrapport"
+author: "Udarbejdet af Ida Bomholt Dyrholm Jacobsen, juni 2026"
+format: pdf
+editor: visual
+---
+
+```{r}
+#| label: packages-load-data
+#| echo: false
+#| output: false
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(glue)
+library(janitor)
+library(kableExtra)
+
+sat_levels <- c("Slet ikke tilfreds", "Ikke tilfreds", "Mindre tilfreds",
+                "Tilfreds", "Rimelig tilfreds", "Meget tilfreds")
+
+data <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/data/Survey.csv",
+                 sep = ";", encoding = "latin1") |>
+  mutate(
+    sp01_labels = factor(sp01, levels = 1:6, labels = sat_levels) |>
+      fct_na_value_to_level("Ikke besvaret")
+  ) |> 
+    mutate(
+    sp03_labels = factor(sp03, levels = 1:6, labels = sat_levels) |>
+      fct_na_value_to_level("Ikke besvaret")
+  )
+```
+
+# Medlemsundersøgelse 2026
+
+Medlemsundersøgelsen løb fra xx til 1. juni 2026. Den blev annonceret via URT xxx og på hjemmesiden.
+
+Da undersøgelsen lukkede d. 1. juni 2026 havde vi fået 266 besvarelser. I juni 2026 havde foreningen 1890 medlemmer og dermed har `r round(nrow(data)/1890*100,2)`% svaret på undersøgelsen.
+
+# 1 Hvor tilfreds er du samlet set med at være medlem af Dansk Botanisk Forening?
+
+Svaret blev givet på en 6-trins skala (*Meget tilfreds, Rimelig tilfreds, Tilfreds*, *Mindre tilfreds, Ikke tilfreds, Slet ikke tilfreds).*
+
+```{r}
+#| label: fig-sp-1
+#| fig-scap: "Generel tilfredshed"
+#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med at være medlem af Dansk Botanisk Forening?")
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+# Table (display)
+data |>
+  tabyl(sp01_labels) |>
+  adorn_totals("row") |>
+  adorn_pct_formatting(digits = 1) |>
+  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
+
+# Table (numeric, for inline text)
+sp01_summary <- data |>
+  tabyl(sp01_labels)
+
+# Plot
+ggplot(data, aes(x = sp01_labels)) +
+  geom_bar(fill = "#285A19", color = "white") +
+  scale_x_discrete(drop = FALSE) +
+  labs(title = "Generel tilfredshed",
+       x = "Tilfredshed", y = "Antal") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+Ud af de `r sum(sp01_summary$n)` besvarelser svarede `r sp01_summary$n[sp01_summary$kategori == "Tilfreds"]`
+respondenter "Tilfreds", svarende til `r round(sp01_summary$percent[sp01_summary$kategori == "Tilfreds"] * 100, 1)` %.
+
+# 2 Hvad kunne gøre dig mere tilfreds med dit medlemskab?
+
+Ud af de `r sum(sp01_summary$n)` besvarelser gav 
+
+```{r}
+#| label: fig-sp-2-string-replies
+#| fig-scap: "Generel tilfredshed"
+#| fig-cap: !expr glue("Generel tilfredshed")
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+data |>
+  filter(!is.na(sp02), sp02 != "") |>
+  select(sp02) |>
+  knitr::kable(col.names = "Svar")
+```
+
+{{< pagebreak >}}
+
+# 3 Hvor tilfreds er du samlet set med hjemmesiden?
+```{r}
+#| label: fig-sp-3-hjemmesiden
+#| fig-scap: "Tilfredshed med hjemmesiden"
+#| fig-cap: !expr glue("Tilfredshed med hjemmesiden")
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+# Table (display)
+data |>
+  tabyl(sp03_labels) |>
+  adorn_totals("row") |>
+  adorn_pct_formatting(digits = 1) |>
+  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
+
+# Table (numeric, for inline text)
+sp01_summary <- data |>
+  tabyl(sp01_labels)
+
+# Plot
+ggplot(data, aes(x = sp03_labels)) +
+  geom_bar(fill = "#392DA6", color = "white") +
+  scale_x_discrete(drop = FALSE) +
+  labs(title = "Hvor tilfreds er du samlet set med hjemmesiden?",
+       x = "Tilfredshed", y = "Antal") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
