@@ -22,14 +22,12 @@ sat_levels <- c("Slet ikke tilfreds", "Ikke tilfreds", "Mindre tilfreds",
 
 data <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/data/Survey.csv",
                  sep = ";", encoding = "latin1") |>
-  mutate(
-    sp01_labels = factor(sp01, levels = 1:6, labels = sat_levels) |>
-      fct_na_value_to_level("Ikke besvaret")
-  ) |> 
-    mutate(
-    sp03_labels = factor(sp03, levels = 1:6, labels = sat_levels) |>
-      fct_na_value_to_level("Ikke besvaret")
-  )
+  mutate(across(
+    c(sp01, sp03, sp05, sp07),
+    ~ factor(.x, levels = 1:6, labels = sat_levels) |>
+      fct_na_value_to_level("Ikke besvaret"),
+    .names = "{.col}_labels"
+  ))
 ```
 
 # Medlemsundersøgelse 2026
@@ -69,7 +67,7 @@ ggplot(data, aes(x = sp01_labels)) +
   scale_x_discrete(drop = FALSE) +
   labs(title = "Generel tilfredshed",
        x = "Tilfredshed", y = "Antal") +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 10) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 Ud af de `r sum(sp01_summary$n)` besvarelser svarede `r sp01_summary$n[sp01_summary$kategori == "Tilfreds"]`
@@ -77,27 +75,49 @@ respondenter "Tilfreds", svarende til `r round(sp01_summary$percent[sp01_summary
 
 # 2 Hvad kunne gøre dig mere tilfreds med dit medlemskab?
 
-Ud af de `r sum(sp01_summary$n)` besvarelser gav 
+Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp02) & data$sp02 != "")` (`r round(sum(!is.na(data$sp02) & data$sp02 != "")/nrow(data) * 100,2)` %) et skriftligt svar på hvad, der kunne gøre dem mere tilfredse med deres medlemskab.
 
 ```{r}
-#| label: fig-sp-2-string-replies
-#| fig-scap: "Generel tilfredshed"
-#| fig-cap: !expr glue("Generel tilfredshed")
-#| out-width: 100%
+#| tbl-cap: "Åbne besvarelser til generel tilfredshed"
 #| echo: false
-#| output: true
 #| message: false
 #| warning: false
 
-data |>
-  filter(!is.na(sp02), sp02 != "") |>
-  select(sp02) |>
-  knitr::kable(col.names = "Svar")
+esc <- function(x) {
+  x <- gsub("[\r\n]+", " ", x)                          # collapse embedded newlines
+  x <- gsub("\\\\", "\\\\textbackslash{}", x)
+  x <- gsub("([&%$#_{}])", "\\\\\\1", x)
+  x <- gsub("~", "\\\\textasciitilde{}", x)
+  x <- gsub("\\^", "\\\\textasciicircum{}", x)
+  x
+}
+
+sp02_tab <- data |>
+  filter(!is.na(sp02), trimws(sp02) != "") |>
+  mutate(nr = row_number(),
+         sp02 = esc(as.character(sp02))) |>
+  select(nr, sp02)
+
+sp02_tab |>
+  kable(col.names = c("Nr", "Svar"),
+        longtable = TRUE,
+        booktabs = TRUE,
+        linesep = "",
+        escape = FALSE) |>
+  kable_styling(
+    latex_options = "repeat_header",
+    full_width = FALSE
+  ) |>
+  column_spec(1, width = "2em") |>
+  column_spec(2, width = "30em",
+              background = ifelse(sp02_tab$nr %% 2 == 0, "gray!15", "white"))
 ```
 
 {{< pagebreak >}}
 
-# 3 Hvor tilfreds er du samlet set med hjemmesiden?
+# 3 Hjemmesiden: Hvor tilfreds er du samlet set med hjemmesiden?
+
+
 ```{r}
 #| label: fig-sp-3-hjemmesiden
 #| fig-scap: "Tilfredshed med hjemmesiden"
@@ -116,8 +136,8 @@ data |>
   knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
 
 # Table (numeric, for inline text)
-sp01_summary <- data |>
-  tabyl(sp01_labels)
+sp03_summary <- data |>
+  tabyl(sp03_labels)
 
 # Plot
 ggplot(data, aes(x = sp03_labels)) +
@@ -125,6 +145,112 @@ ggplot(data, aes(x = sp03_labels)) +
   scale_x_discrete(drop = FALSE) +
   labs(title = "Hvor tilfreds er du samlet set med hjemmesiden?",
        x = "Tilfredshed", y = "Antal") +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp04) & data$sp04 != "")` (`r round(sum(!is.na(data$sp04) & data$sp04 != "")/nrow(data) * 100,2)` %) et skriftligt svar på hvad, der kunne gøre dem mere tilfredse med hjemmesiden.
+
+```{r}
+#| tbl-cap: "Åbne besvarelser til hjemmesiden"
+#| echo: false
+#| message: false
+#| warning: false
+
+esc <- function(x) {
+  x <- gsub("[\r\n]+", " ", x)                          # collapse embedded newlines
+  x <- gsub("\\\\", "\\\\textbackslash{}", x)
+  x <- gsub("([&%$#_{}])", "\\\\\\1", x)
+  x <- gsub("~", "\\\\textasciitilde{}", x)
+  x <- gsub("\\^", "\\\\textasciicircum{}", x)
+  x
+}
+
+sp04_tab <- data |>
+  filter(!is.na(sp04), trimws(sp04) != "") |>
+  mutate(nr = row_number(),
+         sp04 = esc(as.character(sp04))) |>
+  select(nr, sp04)
+
+sp04_tab |>
+  kable(col.names = c("Nr", "Svar"),
+        longtable = TRUE,
+        booktabs = TRUE,
+        linesep = "",
+        escape = FALSE) |>
+  kable_styling(
+    latex_options = "repeat_header",
+    full_width = FALSE
+  ) |>
+  column_spec(1, width = "2em") |>
+  column_spec(2, width = "30em",
+              background = ifelse(sp04_tab$nr %% 2 == 0, "gray!15", "white"))
+```
+{{< pagebreak >}}
+
+# 4 Arrangementer
+```{r}
+#| label: fig-sp-arrangementer
+#| fig-scap: "Arrangementer"
+#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med arrangementer?")
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+# Plot
+ggplot(data, aes(x = sp05_labels)) +
+  geom_bar(fill = "#285A19", color = "white") +
+  scale_x_discrete(drop = FALSE) +
+  labs(title = "Tilfredshed med arrangementer",
+       x = "Tilfredshed", y = "Antal") +
+  theme_minimal(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+#| label: fig-sp-4
+#| fig-scap: "Arrangementer"
+#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med arrangementer?")
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+# Table (display)
+data |>
+  tabyl(sp05_labels) |>
+  adorn_totals("row") |>
+  adorn_pct_formatting(digits = 1) |>
+  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
+
+# Table (numeric, for inline text)
+sp05_summary <- data |>
+  tabyl(sp05_labels)
+
+```
+{{< pagebreak >}}
+
+# 5 URT
+```{r}
+#| label: fig-sp-urt
+#| fig-scap: "Arrangementer"
+#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med arrangementer?")
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+# Plot
+ggplot(data, aes(x = sp05_labels)) +
+  geom_bar(fill = "#285A19", color = "white") +
+  scale_x_discrete(drop = FALSE) +
+  labs(title = "Tilfredshed med arrangementer",
+       x = "Tilfredshed", y = "Antal") +
+  theme_minimal(base_size = 10) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
