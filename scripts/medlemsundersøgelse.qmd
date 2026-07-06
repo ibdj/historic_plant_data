@@ -3,10 +3,9 @@ title: "Medlemsundersøgelsesrapport"
 author: "Udarbejdet af Ida Bomholt Dyrholm Jacobsen, juni 2026"
 format:
   pdf:
-#    geometry:
-#      - margin=2.5cm
     toc: true
-#      toc-title: ""
+    keep-tex: true
+    toc-title: "\\ "
 editor: visual
 ---
 
@@ -21,6 +20,7 @@ library(tidyverse)
 library(glue)
 library(janitor)
 library(kableExtra)
+library(readxl)
 
 theme_set(theme_minimal(base_size = 9))
 theme_update(
@@ -42,7 +42,7 @@ theme_update(
 sat_levels <- c("Slet ikke tilfreds", "Ikke tilfreds", "Mindre tilfreds",
                 "Tilfreds", "Rimelig tilfreds", "Meget tilfreds")
 
-data <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/data/Survey.csv",
+data_raw <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/data/Survey.csv",
                  sep = ";", encoding = "latin1") |>
   mutate(across(
     c(sp01, sp03, sp05, sp07),
@@ -51,10 +51,13 @@ data <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic
     .names = "{.col}_labels"
   ))
 
-data_filtered <- data |> 
+
+medlemsundersøgelse <- read_excel("~/Library/Mobile Documents/com~apple~CloudDocs/dbf/medlemsundersøgelse/medlemsundersøgelse.xlsx")
+
+data <- data_raw |> 
   filter(!is.na(sp01))
 
-data_nas <- data |> 
+data_nas <- data_raw |> 
   filter(is.na(sp01))
 
 ```
@@ -63,33 +66,55 @@ data_nas <- data |>
 
 Medlemsundersøgelsen løb fra xx til 1. juni 2026. Den blev annonceret via URT xxx og på hjemmesiden.
 
-Da undersøgelsen lukkede d. 1. juni 2026 havde vi fået `r nrow(data)` besvarelser. `r nrow(data_nas)` indholdt ingen information og derfor er afrapporteringen baseret på `r nrow(data_filtered)`. I juni 2026 havde foreningen 1890 medlemmer og dermed har `r round(nrow(data)/1890*100,2)`% (`r round(nrow(data_filtered)/1890*100,2)`% uden tomme svar) svaret på undersøgelsen.
+Da undersøgelsen lukkede d. 1. juni 2026 havde vi fået `r nrow(data_raw)` besvarelser. `r nrow(data_nas)` indholdt ingen information og derfor er afrapporteringen baseret på `r nrow(data)`. I juni 2026 havde foreningen 1890 medlemmer og dermed har `r round(nrow(data_raw)/1890*100,2)`% (`r round(nrow(data)/1890*100,2)`% uden tomme svar) svaret på undersøgelsen.
 
 {{< pagebreak >}}
 
 # 1 Generel tilfredshed
 
-"Hvor tilfreds er du samlet set med at være medlem af Dansk Botanisk Forening?"
+*Hvor tilfreds er du samlet set med at være medlem af Dansk Botanisk Forening?*
 
-Svaret blev givet på en 6-trins skala (*Meget tilfreds, Rimelig tilfreds, Tilfreds*, *Mindre tilfreds, Ikke tilfreds, Slet ikke tilfreds).*
+Svaret blev givet på en 6-trins skala (*Meget tilfreds*, *Rimelig tilfreds*, *Tilfreds*, *Mindre tilfreds*, *Ikke tilfreds*, *Slet ikke tilfreds*).
 
 ```{r}
 #| label: fig-sp-1
 #| fig-scap: "Generel tilfredshed"
 #| fig-cap: !expr glue("Hvor tilfreds er du samlet set med at være medlem af Dansk Botanisk Forening?")
 #| fig-pos: "H"
+#| fig-height: 1.75
 #| out-width: 100%
 #| echo: false
 #| output: true
 #| message: false
 #| warning: false
 
-# Plot
-ggplot(data, aes(x = sp01_labels)) +
-  geom_bar(fill = "#285A19", color = "white") +
-  scale_x_discrete(drop = FALSE) +
-  labs(title = "Generel tilfredshed",
-       x = "", y = "Antal")
+sp01_dist <- data |>
+  count(sp01_labels, .drop = FALSE) |>
+  mutate(pct = n / sum(n),
+         label = ifelse(n > 0, paste0(n, "\n", round(pct * 100), "%"), ""))
+
+sat_colours <- c(
+  "Slet ikke tilfreds"  = "#D73027",
+  "Ikke tilfreds"       = "#FC8D59",
+  "Mindre tilfreds"     = "#FEE08B",
+  "Tilfreds"            = "#D9EF8B",
+  "Rimelig tilfreds"    = "#91CF60",
+  "Meget tilfreds"      = "#1A9850",
+  "Ikke besvaret"       = "grey70"
+)
+
+ggplot(sp01_dist, aes(x = n, y = "", fill = sp01_labels)) +
+  geom_col(color = "white", width = 0.5) +
+  geom_text(aes(label = label), position = position_stack(vjust = 0.5),
+            size = 2, color = "black") +
+  scale_fill_manual(values = sat_colours) +
+  labs(title = "Generel tilfredshed", x = "Antal svar", y = "", fill = "") +
+  theme_minimal(base_size = 8) +
+  theme(legend.position = "bottom",
+        legend.text = element_text(size = 5),
+        legend.key.size = unit(0.4, "cm"),
+        plot.title = element_text(size = 7),
+        axis.title = element_text(size = 6))
 
 ```
 
@@ -172,14 +197,34 @@ sp02_tab |>
 #| message: false
 #| warning: false
 
-# Plot
-ggplot(data, aes(x = sp03_labels)) +
-  geom_bar(fill = "#285A19", color = "white") +
-  scale_x_discrete(drop = FALSE) +
-  labs(title = "Tilfredshed med hjemmesiden",
-       x = "", y = "Antal") +
-  theme_minimal(base_size = 10) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+sp03_dist <- data |>
+  count(sp03_labels, .drop = FALSE) |>
+  mutate(pct = n / sum(n),
+         label = ifelse(n > 0, paste0(n, "\n", round(pct * 100), "%"), ""))
+
+sat_colours <- c(
+  "Slet ikke tilfreds"  = "#D73027",
+  "Ikke tilfreds"       = "#FC8D59",
+  "Mindre tilfreds"     = "#FEE08B",
+  "Tilfreds"            = "#D9EF8B",
+  "Rimelig tilfreds"    = "#91CF60",
+  "Meget tilfreds"      = "#1A9850",
+  "Ikke besvaret"       = "grey70"
+)
+
+ggplot(sp03_dist, aes(x = n, y = "", fill = sp03_labels)) +
+  geom_col(color = "white", width = 0.5) +
+  geom_text(aes(label = label), position = position_stack(vjust = 0.5),
+            size = 2, color = "black") +
+  scale_fill_manual(values = sat_colours) +
+  labs(title = "Tilfredshed med hjemmesiden", x = "Antal svar", y = "", fill = "") +
+  theme_minimal(base_size = 8) +
+  theme(legend.position = "bottom",
+        legend.text = element_text(size = 5),
+        legend.key.size = unit(0.4, "cm"),
+        plot.title = element_text(size = 7),
+        axis.title = element_text(size = 6))
+
 ```
 
 ```{r}
