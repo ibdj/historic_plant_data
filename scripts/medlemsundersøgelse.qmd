@@ -233,7 +233,7 @@ ggplot(sp03_dist, aes(x = n, y = "", fill = sp03_labels)) +
 #| fig-pos: "H"
 #| out-width: 100%
 #| echo: false
-#| output: false
+  #| output: false
 #| message: false
 #| warning: false
 
