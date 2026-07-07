@@ -191,6 +191,7 @@ sp02_tab |>
 #| fig-scap: "Hjemmesiden"
 #| fig-cap: !expr glue("Hvor tilfreds er du samlet set med hjemmesiden?")
 #| fig-pos: "H"
+#| fig-height: 1.75
 #| out-width: 100%
 #| echo: false
 #| output: true
@@ -232,7 +233,7 @@ ggplot(sp03_dist, aes(x = n, y = "", fill = sp03_labels)) +
 #| fig-pos: "H"
 #| out-width: 100%
 #| echo: false
-#| output: true
+#| output: false
 #| message: false
 #| warning: false
 
