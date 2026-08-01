@@ -8,7 +8,7 @@ library(tesseract)
 library(magick)
 
 # Set your main folder path
-main_folder <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek"
+main_folder <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek/split"
 
 # Get all PDF files recursively from all subfolders
 pdf_files <- list.files(
@@ -66,8 +66,15 @@ names(split_files) <- "full_path"
 # Extract species (everything before _p and the page number)
 split_files$species <- gsub("_p\\d+$", "", tools::file_path_sans_ext(basename(split_files$full_path)))
 
-# Extract page number
-split_files$page <- as.integer(gsub(".*_p(\\d+)$", "\\1", tools::file_path_sans_ext(basename(split_files$full_path))))
+nm <- tools::file_path_sans_ext(basename(split_files$full_path))
+
+m <- str_match(nm, "^(.*)_p(\\d+)(?:_tbu(.+))?$")
+
+split_files$species  <- m[, 2]
+split_files$page     <- as.integer(m[, 3])
+split_files$district <- as.factor(m[, 4])
+
+summary(split_files)
 
 # Fix the column name first
 names(split_files) <- "full_path"
@@ -115,26 +122,4 @@ hist(stats_split$count, breaks = seq(min(stats_split$count), max(stats_split$cou
 axis(5, at = seq(5, 100), labels = FALSE, tck = -0.02)
 axis(5, at = h$mids)
 
-###### extrating ocr ###########################################################
-
-# Test on one file
-img_path <- pdftools::pdf_convert(split_files$full_path[1], dpi = 300, verbose = FALSE)
-image <- image_read(img_path)
-info  <- image_info(image)
-
-# Full OCR
-full_text <- ocr(image, engine = tesseract("dan"))
-
-# Crop upper right for district only
-cropped <- image_crop(image, geometry = paste0(
-  round(info$width * 0.35), "x",
-  round(info$height * 0.08), "+",
-  round(info$width * 0.65), "+0"
-))
-distr_text <- ocr(cropped, engine = tesseract("dan"))
-distr_num  <- gsub(".*Distr\\.?\\s*(\\d+).*", "\\1", distr_text)
-
-cat("Full text:\n", full_text)
-cat("District:", distr_num)
-file.remove(img_path)
 
