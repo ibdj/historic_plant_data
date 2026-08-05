@@ -30,6 +30,7 @@ theme_update(
 
 #to do
 # check at alle fritekst felter er med
+# filtrer kommentarer på kun én eller to chara
 # cheack at alle grafer er med
 
 
