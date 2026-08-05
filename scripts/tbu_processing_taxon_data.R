@@ -5,6 +5,8 @@ if (!require("pacman")) install.packages("pacman")
 devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
+#testing
+
 #### reading the file ####
 
 xx <- read_sheet('https://docs.google.com/spreadsheets/d/1Zeqozv4IKLRNfixj5c8vwsZQf6BFwduJu7DyWTVSfsw/edit?gid=0#gid=0', sheet = 'taxa')
