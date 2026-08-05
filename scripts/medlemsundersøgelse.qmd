@@ -28,9 +28,12 @@ theme_update(
   plot.title = element_text(size = 9)
 )
 
+#to do
+# check at alle fritekst felter er med
+# cheack at alle grafer er med
+
 
 ```
-
 
 ```{r}
 #| label: packages-load-data
@@ -140,8 +143,8 @@ sp01_summary <- data |>
 
 
 ```
-Ud af de `r sum(sp01_summary$n)` besvarelser svarede `r sp01_summary$n[sp01_summary$kategori == "Tilfreds"]`
-respondenter "Tilfreds", svarende til `r round(sp01_summary$percent[sp01_summary$kategori == "Tilfreds"] * 100, 1)` %.
+
+Ud af de `r sum(sp01_summary$n)` besvarelser svarede `r sp01_summary$n[sp01_summary$kategori == "Tilfreds"]` respondenter "Tilfreds", svarende til `r round(sp01_summary$percent[sp01_summary$kategori == "Tilfreds"] * 100, 1)` %.
 
 {{< pagebreak >}}
 
@@ -186,6 +189,7 @@ sp02_tab |>
 {{< pagebreak >}}
 
 # 3 Hjemmesiden
+
 ```{r}
 #| label: fig-sp-hjemmesiden
 #| fig-scap: "Hjemmesiden"
@@ -313,7 +317,6 @@ ggplot(data, aes(x = sp05_labels)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-
 ```{r}
 #| tbl-cap: "Åbne besvarelser til arrangementer"
 #| out-width: 100%
@@ -338,6 +341,7 @@ sp05_summary <- data |>
 {{< pagebreak >}}
 
 # 5 URT
+
 ```{r}
 #| label: fig-sp-urt
 #| fig-scap: "URT"
