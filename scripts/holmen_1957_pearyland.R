@@ -1,14 +1,19 @@
 #### reading packages ##########################################################################################################
 
 if (!require("pacman")) install.packages("pacman")
+
 devtools::install_github("inbo/inborutils")
+
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
 #### reading the data from google sheets########################################################################################
 taxa <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'taxa') |> 
   distinct() |> 
-  lapply(as.character)
+  mutate(across(everything(), as.character))
+
+class(taxa)
 names(taxa)
+str(taxa)
 
 locations <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'locations') |> 
   distinct() |> 
@@ -26,29 +31,30 @@ taxa_pivot <- taxa |>
   separate_wider_delim(cols = observer, delim = "&", names = c("observer1", "observer2","observer3"), too_few = "align_start") |> 
   filter(!grepl("\\d", observer1)) 
 
-taxa_pivot2 <- taxa_pivot |> 
+all_observations <- taxa_pivot |> 
   pivot_longer(cols = observer1:observer3, names_to = "pos", values_to = "observer") |> 
   drop_na() |> 
   filter(!grepl("\\d", observer)) 
 
-common1 <- intersect(names(taxa_pivot2), names(identifier))
-dates <- left_join(taxa_pivot2, identifier, by = common1)
+common1 <- intersect(names(all_observations), names(identifier))
+all_observations_incl_dates <- left_join(all_observations, identifier, by = common1)
 
-taxa_pivot2 |> count(across(all_of(common1))) |> filter(n > 1)
+all_observations |> count(across(all_of(common1))) |> filter(n > 1)
 identifier  |> count(across(all_of(common1))) |> filter(n > 1)
 
-needs_dates <- dates |> 
+needs_dates <- all_observations_incl_dates |> 
   filter(date == "NULL") |> 
   distinct(location, observer,verbatimName)
+needs_dates
 
-needs_dates2 <- dates |> 
+needs_dates2 <- all_observations_incl_dates |> 
   filter(date == "NULL") |> 
   distinct(location, observer)
-
+needs_dates2
 
 #### matching to GBIF ###################################################################################################################
-#make a unique list of taxon names
 
+#make a unique list of taxon names
 unique <- taxa_pivot2 |> 
   distinct(verbatimName)
 
@@ -64,10 +70,18 @@ not_matched <- gbif_matchedlist |>
   #filter(is.na(speciesKey))
   filter(matchType %in% c("HIGHERRANK","NONE")) 
 
-view(not_matched)
+not_matched
+
+#### joining all data ##########################################################
+
+
+
+
+
+
+
 
 #### generating the final file ##########################################################################################################
-
 add_id <- function(df){
   df |>  
     mutate(
