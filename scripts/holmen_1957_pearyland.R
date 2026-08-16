@@ -13,11 +13,10 @@ taxa <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M
 
 class(taxa)
 names(taxa)
-str(taxa)
 
 locations <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'locations') |> 
   distinct() |> 
-  mutate(location_id = verbatim_location, verbatimLocality = verbatim_location)
+  mutate(verbatimLocality = locationID)
 
 identifier <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'identifier') |> 
   distinct()
@@ -25,7 +24,7 @@ identifier <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1
 ##### processing taxa ##########################################################
 
 taxa_pivot <- taxa |> 
-  pivot_longer(cols = 4:ncol(taxa), names_to = "location", values_to = "observer") |> 
+  pivot_longer(cols = 4:ncol(taxa), names_to = "locationID", values_to = "observer") |> 
   drop_na() |> 
   filter(observer != "NULL") |> 
   separate_wider_delim(cols = observer, delim = "&", names = c("observer1", "observer2","observer3"), too_few = "align_start") |> 
@@ -44,25 +43,24 @@ identifier  |> count(across(all_of(common1))) |> filter(n > 1)
 
 needs_dates <- all_observations_incl_dates |> 
   filter(date == "NULL") |> 
-  distinct(location, observer,verbatimName)
+  distinct(locationID, observer,verbatimName)
 needs_dates
 
 needs_dates2 <- all_observations_incl_dates |> 
   filter(date == "NULL") |> 
-  distinct(location, observer)
+  distinct(locationID, observer)
 needs_dates2
 
 #### matching to GBIF ###################################################################################################################
 
 #make a unique list of taxon names
-unique <- taxa_pivot2 |> 
+unique <- all_observations_incl_dates |> 
   distinct(verbatimName)
 
 gbif_matchedlist <- unique |> 
   name_backbone_checklist("name") |> 
   rename(name = verbatim_name) |> 
-  mutate(matchType = as.factor(matchType))
-#  select(usageKey, acceptedUsageKey,scientificName, canonicalName, name,rank,,verbatim_index,verbatim_rank,status,confidence,matchType,kingdom,phylum,order#,family,genus,species,kingdomKey,phylumKey,classKey,orderKey,familyKey,genusKey,speciesKey,synonym,class)  
+  mutate(matchType = as.factor(matchType), verbatimName = name)
 
 summary(gbif_matchedlist)
 
@@ -74,37 +72,23 @@ not_matched
 
 #### joining all data ##########################################################
 
+common2 <- intersect(names(all_observations_incl_dates), names(gbif_matchedlist))
+joined_dates_gbif <- left_join(all_observations_incl_dates, gbif_matchedlist, by = common2)
 
-
-
-
-
+common3 <- intersect(names(joined_dates_gbif), names(locations))
+joined_dates_gbif_coordinates <- left_join(joined_dates_gbif, locations, by = common3)
 
 
 #### generating the final file ##########################################################################################################
 add_id <- function(df){
-  df |>  
-    mutate(
-      id1 = paste("urn:vpferl"),
-      id2 = random_id(nrow(.))
-    ) |>  
-    unite("occurrenceID",id1:id2, sep = ":") 
+  df |>
+    mutate(occurrenceID = paste("urn:vpferl", random_id(n()), sep = ":"))
 }
 
-names(gbif_matchedlist)
-verbatim_names <- xy_gbif_matched_name_backbone_checklist |> 
-  select(scientificName, name)
-
-names(dates)
-names(gbif_matchedlist)
-
-common3 <- intersect(names(dates |> mutate(name = verbatimName)), names(xy_gbif_matched_name_backbone_checklist))
-common3
-
-file_with_ids <- left_join(dates |> mutate(name = verbatimName), xy_gbif_matched_name_backbone_checklist, by = common3)|> 
+joined_dates_gbif_coordinates_id <- joined_dates_gbif_coordinates |> 
   add_id()
 
-file_with_ids[,"occurrenceID"]
+joined_dates_gbif_coordinates_id[,"occurrenceID"]
 
 common4 <- intersect(names(file_with_ids), names(locations))
 common4
