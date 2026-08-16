@@ -5,16 +5,22 @@ devtools::install_github("inbo/inborutils")
 pacman::p_load(tidyverse,googlesheets4, rgbif, ids, lubridate, devtools, inborutils) 
 
 #### reading the data from google sheets########################################################################################
-taxa <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'taxa')
+taxa <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'taxa') |> 
+  distinct() |> 
+  lapply(as.character)
+names(taxa)
 
-locations <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'locations')
+locations <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'locations') |> 
+  distinct() |> 
+  mutate(location_id = verbatim_location, verbatimLocality = verbatim_location)
 
-identifier <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'identifier')
+identifier <- read_sheet('https://docs.google.com/spreadsheets/d/13nuhJEVjqnZ1a1d7jh2M2f8dbjJAl0GL-k6MyihAI0w/edit?gid=199168860#gid=199168860', sheet = 'identifier') |> 
+  distinct()
 
-taxa[] <- lapply(taxa, as.character)
+##### processing taxa ##########################################################
 
 taxa_pivot <- taxa |> 
-  pivot_longer(cols = 3:ncol(taxa), names_to = "location", values_to = "observer") |> 
+  pivot_longer(cols = 4:ncol(taxa), names_to = "location", values_to = "observer") |> 
   drop_na() |> 
   filter(observer != "NULL") |> 
   separate_wider_delim(cols = observer, delim = "&", names = c("observer1", "observer2","observer3"), too_few = "align_start") |> 
@@ -25,8 +31,11 @@ taxa_pivot2 <- taxa_pivot |>
   drop_na() |> 
   filter(!grepl("\\d", observer)) 
 
-dates <- taxa_pivot2 |> 
-  left_join(identifier, by = c("observer", "location"))
+common1 <- intersect(names(taxa_pivot2), names(identifier))
+dates <- left_join(taxa_pivot2, identifier, by = common1)
+
+taxa_pivot2 |> count(across(all_of(common1))) |> filter(n > 1)
+identifier  |> count(across(all_of(common1))) |> filter(n > 1)
 
 needs_dates <- dates |> 
   filter(date == "NULL") |> 
@@ -39,54 +48,59 @@ needs_dates2 <- dates |>
 
 #### matching to GBIF ###################################################################################################################
 #make a unique list of taxon names
+
 unique <- taxa_pivot2 |> 
   distinct(verbatimName)
 
-xy_gbif_matched_name_backbone_checklist <- unique |> 
+gbif_matchedlist <- unique |> 
   name_backbone_checklist("name") |> 
-  rename("name" = "verbatim_name") |> 
+  rename(name = verbatim_name) |> 
   mutate(matchType = as.factor(matchType))
 #  select(usageKey, acceptedUsageKey,scientificName, canonicalName, name,rank,,verbatim_index,verbatim_rank,status,confidence,matchType,kingdom,phylum,order#,family,genus,species,kingdomKey,phylumKey,classKey,orderKey,familyKey,genusKey,speciesKey,synonym,class)  
 
-summary(xy_gbif_matched_name_backbone_checklist)
+summary(gbif_matchedlist)
 
-not_matched <- xy_gbif_matched_name_backbone_checklist |> 
+not_matched <- gbif_matchedlist |> 
   #filter(is.na(speciesKey))
   filter(matchType %in% c("HIGHERRANK","NONE")) 
 
 view(not_matched)
 
-
 #### generating the final file ##########################################################################################################
 
 add_id <- function(df){
-  df %>% 
+  df |>  
     mutate(
       id1 = paste("urn:vpferl"),
       id2 = random_id(nrow(.))
-    ) %>% 
+    ) |>  
     unite("occurrenceID",id1:id2, sep = ":") 
 }
 
-names(xy_gbif_matched_name_backbone_checklist)
+names(gbif_matchedlist)
 verbatim_names <- xy_gbif_matched_name_backbone_checklist |> 
   select(scientificName, name)
 
 names(dates)
-names(xy_gbif_matched_name_backbone_checklist)
-file_with_ids <- dates |> mutate(name = verbatimName) |> 
-  left_join(xy_gbif_matched_name_backbone_checklist, by = "name") |> 
+names(gbif_matchedlist)
+
+common3 <- intersect(names(dates |> mutate(name = verbatimName)), names(xy_gbif_matched_name_backbone_checklist))
+common3
+
+file_with_ids <- left_join(dates |> mutate(name = verbatimName), xy_gbif_matched_name_backbone_checklist, by = common3)|> 
   add_id()
 
 file_with_ids[,"occurrenceID"]
 
+common4 <- intersect(names(file_with_ids), names(locations))
+common4
 final_file <- file_with_ids |> 
   filter(!grepl("×", name)) |> 
-  mutate(location_id = location) |> 
-  left_join(locations |> mutate(location_id = verbatim_location, verbatimLocality = verbatim_location), by = "location_id")
+  left_join(locations, by = common4)
 
 final_file <- file_with_ids
 names(final_file)
+
 write_rds(final_file,"holmen_1957_pearyland.rds")
 holmen_1957_pearyland <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/holmen_1957_pearyland.rds")
 
@@ -99,6 +113,7 @@ ipt_file <- left_join(holmen_1957_pearyland, verbatim_names, by = common)
 
 names(ipt_file)
 
+ipt_file <- ipt_file |> 
   select(name,
          verbatimName,
          #location,
