@@ -86,32 +86,21 @@ add_id <- function(df){
 }
 
 joined_dates_gbif_coordinates_id <- joined_dates_gbif_coordinates |> 
-  add_id()
+  add_id() |> 
+  dplyr::select(-date1,-date2)
 
 joined_dates_gbif_coordinates_id[,"occurrenceID"]
 
-common4 <- intersect(names(file_with_ids), names(locations))
-common4
-final_file <- file_with_ids |> 
-  filter(!grepl("×", name)) |> 
-  left_join(locations, by = common4)
+names(joined_dates_gbif_coordinates_id)
 
-final_file <- file_with_ids
-names(final_file)
-
-write_rds(final_file,"holmen_1957_pearyland.rds")
+write_rds(joined_dates_gbif_coordinates_id,"holmen_1957_pearyland.rds")
 holmen_1957_pearyland <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/holmen_1957_pearyland.rds")
 
 #### writing the file ###################################################################################################################
 
 names(holmen_1957_pearyland)
 
-common <- intersect(names(holmen_1957_pearyland), names(verbatim_names))
-ipt_file <- left_join(holmen_1957_pearyland, verbatim_names, by = common)
-
-names(ipt_file)
-
-ipt_file <- ipt_file |> 
+holmen_1957_pearyland <- holmen_1957_pearyland |> 
   select(name,
          verbatimName,
          #location,
@@ -146,7 +135,7 @@ ipt_file <- ipt_file |>
          familyKey,
          genusKey,
          speciesKey,
-         synonym,
+#        synonym,
          class,
          occurrenceID) |> 
   mutate(
