@@ -39,7 +39,7 @@ needs_dates2 <- dates |>
 
 #### matching to GBIF ###################################################################################################################
 #make a unique list of taxon names
-unique <- taxa_pivot_last |> 
+unique <- taxa_pivot2 |> 
   distinct(verbatimName)
 
 xy_gbif_matched_name_backbone_checklist <- unique |> 
@@ -68,30 +68,39 @@ add_id <- function(df){
     unite("occurrenceID",id1:id2, sep = ":") 
 }
 
-verbatim_names <- taxa |> 
-  select(name, verbatim_name)
+names(xy_gbif_matched_name_backbone_checklist)
+verbatim_names <- xy_gbif_matched_name_backbone_checklist |> 
+  select(scientificName, name)
 
-file_with_ids <- taxa_pivot_withdate |> 
+names(dates)
+names(xy_gbif_matched_name_backbone_checklist)
+file_with_ids <- dates |> mutate(name = verbatimName) |> 
   left_join(xy_gbif_matched_name_backbone_checklist, by = "name") |> 
   add_id()
 
 file_with_ids[,"occurrenceID"]
 
 final_file <- file_with_ids |> 
-  filter(!grepl("×", name))
+  filter(!grepl("×", name)) |> 
+  mutate(location_id = location) |> 
+  left_join(locations |> mutate(location_id = verbatim_location, verbatimLocality = verbatim_location), by = "location_id")
 
 final_file <- file_with_ids
-
-write_rds(final_file,"vaage_1932_eirikraudesland.rds")
-vaage_1932_eirikraudesland <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/vaage_1932_eirikraudesland.rds")
+names(final_file)
+write_rds(final_file,"holmen_1957_pearyland.rds")
+holmen_1957_pearyland <- readRDS("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/holmen_1957_pearyland.rds")
 
 #### writing the file ###################################################################################################################
 
-ipt_file <- vaage_1932_eirikraudesland |> 
-  mutate(year = year(date)) |> 
-  left_join(verbatim_names, by = "name") |> 
+names(holmen_1957_pearyland)
+
+common <- intersect(names(holmen_1957_pearyland), names(verbatim_names))
+ipt_file <- left_join(holmen_1957_pearyland, verbatim_names, by = common)
+
+names(ipt_file)
+
   select(name,
-         verbatim_name,
+         verbatimName,
          #location,
          #obs,
          #number,
@@ -99,7 +108,7 @@ ipt_file <- vaage_1932_eirikraudesland |>
          #area,
          decimalLatitude,
          decimalLongitude,
-         place,
+  #      place,
          date,
          usageKey,
          acceptedUsageKey,
@@ -129,7 +138,7 @@ ipt_file <- vaage_1932_eirikraudesland |>
          occurrenceID) |> 
   mutate(
     basisOfRecord = "HumanObservation",
-    occurrenceStatus = "presence",
+    occurrenceStatus = "present",
     year = year(date),
     month = month(date),
     day = day(date),
