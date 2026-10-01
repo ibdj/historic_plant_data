@@ -10,13 +10,15 @@ pacman::p_load(tidyverse, googlesheets4, rgbif, ids, lubridate,janitor, readxl, 
 #DBF_navneliste_8_version_21_04_2026 
 
 #DBF_navneliste_9_version_21_05_2026 <- read_excel(file.choose())
-DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+#DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+#DBF_navneliste_8_version_21_04_2026 <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
+DBF_navneliste_9_version_21_05_2026 <- read_excel('/Users/ibdj/Library/CloudStorage/GoogleDrive-ibdjacobsen@gmail.com/My Drive/navneudvalget/DBF navneliste 9. version 21-05-2026.xlsx')
 #seneste_liste <- read_excel("~/Google Drive/My Drive/navneudvalget/DBF navneliste 8. version 21-04-2026.xlsx")
 
-df_v9 <- DBF_navneliste_9_version_21_04_2026 |>
+df_v9 <- DBF_navneliste_9_version_21_05_2026 |>
   mutate(n_filled = rowSums(across(everything(), ~ !is.na(.x))), index = row_number())
 
-df_clean_v9 <- df_v9 |>
+df_clean <- df_v9 |>
   # Identify Latin genus names (no space)
   mutate(genus_marker = ifelse(
     !is.na(`Videnskabeligt navn`) & !grepl(" ", `Videnskabeligt navn`),
@@ -59,7 +61,7 @@ print <- df_clean |>
          latex3 = "&\\textit{",
          latex4 = "}",
          latex5 = "\\\\") |> 
-  select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
+  dplyr::select(`Accepterede danske navne`,latex1,`Videnskabeligt navn`,latex2,`Dansk slægt`,latex3,genus,latex4,latex5)
 
 anden_export <- print |> 
   select(`Accepterede danske navne`,`Videnskabeligt navn`,`Dansk slægt`,genus)
@@ -80,7 +82,7 @@ write_delim(export, output_path_csv, delim = " ")
 
 write.table(print, file = output_path, sep = " ", quote = FALSE, row.names = FALSE, col.names = FALSE, eol = "\n")
 
-write_xlsx(anden_export,  "/Users/ibdj/Nextcloud/Botanisk Forening/Hovedbestyrelsen/Udvalg og samarbejde/Navneudvalget/DBF_navneliste_print2026_04_21.xlsx")
+write_xlsx(anden_export,  "/Users/ibdj/Nextcloud/Botanisk Forening/Hovedbestyrelsen/Udvalg og samarbejde/Navneudvalget/DBF_navneliste_print2026_09_24.xlsx")
 
 #### matching til GBIF ########################################################
 
