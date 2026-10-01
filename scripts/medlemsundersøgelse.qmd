@@ -1,6 +1,6 @@
 ---
-title: "Medlemsundersøgelsesrapport"
-author: "Udarbejdet af Ida Bomholt Dyrholm Jacobsen, juni 2026"
+title: "Resultater af medlemsundersøgelse 2026 i Dansk Botanisk Forening"
+author: "Udarbejdet af Ida Bomholt Dyrholm Jacobsen, august 2026"
 format:
   pdf:
     toc: true
@@ -49,7 +49,7 @@ sat_levels <- c("Slet ikke tilfreds", "Ikke tilfreds", "Mindre tilfreds",
 data_raw <- read.csv("~/Library/Mobile Documents/com~apple~CloudDocs/botany/historic_plant_data/data/Survey.csv",
                  sep = ";", encoding = "latin1") |>
   mutate(across(
-    c(sp01, sp03, sp05, sp07),
+    c(sp01, sp03, sp05, sp06, sp07, sp08),
     ~ factor(.x, levels = 1:6, labels = sat_levels) |>
       fct_na_value_to_level("Ikke besvaret"),
     .names = "{.col}_labels"
@@ -68,17 +68,18 @@ data_nas <- data_raw |>
 
 # Medlemsundersøgelse 2026
 
-Medlemsundersøgelsen løb fra xx til 1. juni 2026. Den blev annonceret via URT xxx og på hjemmesiden.
+Medlemsundersøgelsen løb fra 15. april 2026 til 1. juni 2026. Den blev annonceret via URT 2026:1 og på hjemmesiden.
 
-Da undersøgelsen lukkede d. 1. juni 2026 havde vi fået `r nrow(data_raw)` besvarelser. `r nrow(data_nas)` indholdt ingen information og derfor er afrapporteringen baseret på `r nrow(data)`. I juni 2026 havde foreningen 1890 medlemmer og dermed har `r round(nrow(data_raw)/1890*100,2)`% (`r round(nrow(data)/1890*100,2)`% uden tomme svar) svaret på undersøgelsen.
+Da undersøgelsen lukkede d. 1. juni 2026 havde vi fået `r nrow(data)` besvarelser. I juni 2026 havde foreningen 1890 medlemmer og dermed har `r round(nrow(data)/1890*100,2)`% svaret på undersøgelsen.
+De kvantitative svar angiver en overordnet fin tilfredshed. De kvalitative svar reflekterer et forventet meget blandet billede af vores medlemmer, og muligheder for forbedringer inden for f.eks. fokus på uerfarne botanikere, som gerne vil lære mere, og kommunikation af vores allerede eksisterende tilbud (både arrangementer og ressourcer på f.eks. hjemmesiden).
+
+Hvert tema (generel tilfredshed, hjemmesiden, arrangementer, URT og fremtidige prioriteringer) blev behandlet med en kvantitativ vurdering (svar på en 6-trins skala; *Meget tilfreds*, *Rimelig tilfreds*, *Tilfreds*, *Mindre tilfreds*, *Ikke tilfreds*, *Slet ikke tilfreds*) og mulighed for en fritekst kommentering. 
 
 {{< pagebreak >}}
 
 # 1 Generel tilfredshed
 
 *Hvor tilfreds er du samlet set med at være medlem af Dansk Botanisk Forening?*
-
-Svaret blev givet på en 6-trins skala (*Meget tilfreds*, *Rimelig tilfreds*, *Tilfreds*, *Mindre tilfreds*, *Ikke tilfreds*, *Slet ikke tilfreds*).
 
 ```{r}
 #| label: fig-sp-1
@@ -94,7 +95,10 @@ Svaret blev givet på en 6-trins skala (*Meget tilfreds*, *Rimelig tilfreds*, *T
 
 sp01_dist <- data |>
   count(sp01_labels, .drop = FALSE) |>
-  mutate(pct = n / sum(n),
+  mutate(sp01_labels = fct_relevel(sp01_labels,
+           "Ikke besvaret", "Meget tilfreds", "Rimelig tilfreds", "Tilfreds",
+           "Mindre tilfreds", "Ikke tilfreds", "Slet ikke tilfreds"),
+         pct = n / sum(n),
          label = ifelse(n > 0, paste0(n, "\n", round(pct * 100), "%"), ""))
 
 sat_colours <- c(
@@ -108,11 +112,14 @@ sat_colours <- c(
 )
 
 ggplot(sp01_dist, aes(x = n, y = "", fill = sp01_labels)) +
-  geom_col(color = "white", width = 0.5) +
-  geom_text(aes(label = label), position = position_stack(vjust = 0.5),
+  geom_col(color = "white", width = 0.5,
+           position = position_stack(reverse = TRUE)) +
+  geom_text(aes(label = label),
+            position = position_stack(vjust = 0.5, reverse = TRUE),
             size = 2, color = "black") +
   scale_fill_manual(values = sat_colours) +
-  labs(title = "Generel tilfredshed", x = "Antal svar", y = "", fill = "") +
+  guides(fill = guide_legend(nrow = 1)) +
+  labs(title = "", x = "Antal svar", y = "", fill = "") +
   theme_minimal(base_size = 8) +
   theme(legend.position = "bottom",
         legend.text = element_text(size = 5),
@@ -131,23 +138,12 @@ ggplot(sp01_dist, aes(x = n, y = "", fill = sp01_labels)) +
 #| message: false
 #| warning: false
 
-# Table (display)
-data |>
-  tabyl(sp01_labels) |>
-  adorn_totals("row") |>
-  adorn_pct_formatting(digits = 1) |>
-  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
-
 # Table (numeric, for inline text)
 sp01_summary <- data |>
   tabyl(sp01_labels)
 
-
 ```
 
-Ud af de `r sum(sp01_summary$n)` besvarelser svarede `r sp01_summary$n[sp01_summary$kategori == "Tilfreds"]` respondenter "Tilfreds", svarende til `r round(sp01_summary$percent[sp01_summary$kategori == "Tilfreds"] * 100, 1)` %.
-
-{{< pagebreak >}}
 
 Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp02) & data$sp02 != "")` (`r round(sum(!is.na(data$sp02) & data$sp02 != "")/nrow(data) * 100,2)` %) et skriftligt svar på hvad, der kunne gøre dem mere tilfredse med deres medlemskab.
 
@@ -191,10 +187,12 @@ sp02_tab |>
 
 # 3 Hjemmesiden
 
+*Hvor tilfreds er du samlet set med hjemmesiden?*
+
 ```{r}
 #| label: fig-sp-hjemmesiden
 #| fig-scap: "Hjemmesiden"
-#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med hjemmesiden?")
+#| fig-cap: !expr glue("Tilfredshed med hjemmesiden.")
 #| fig-pos: "H"
 #| fig-height: 1.75
 #| out-width: 100%
@@ -205,7 +203,10 @@ sp02_tab |>
 
 sp03_dist <- data |>
   count(sp03_labels, .drop = FALSE) |>
-  mutate(pct = n / sum(n),
+  mutate(sp03_labels = fct_relevel(sp03_labels,
+           "Ikke besvaret", "Meget tilfreds", "Rimelig tilfreds", "Tilfreds",
+           "Mindre tilfreds", "Ikke tilfreds", "Slet ikke tilfreds"),
+         pct = n / sum(n),
          label = ifelse(n > 0, paste0(n, "\n", round(pct * 100), "%"), ""))
 
 sat_colours <- c(
@@ -219,11 +220,14 @@ sat_colours <- c(
 )
 
 ggplot(sp03_dist, aes(x = n, y = "", fill = sp03_labels)) +
-  geom_col(color = "white", width = 0.5) +
-  geom_text(aes(label = label), position = position_stack(vjust = 0.5),
+  geom_col(color = "white", width = 0.5,
+           position = position_stack(reverse = TRUE)) +
+  geom_text(aes(label = label),
+            position = position_stack(vjust = 0.5, reverse = TRUE),
             size = 2, color = "black") +
   scale_fill_manual(values = sat_colours) +
-  labs(title = "Tilfredshed med hjemmesiden", x = "Antal svar", y = "", fill = "") +
+  guides(fill = guide_legend(nrow = 1)) +
+  labs(title = "", x = "Antal svar", y = "", fill = "") +
   theme_minimal(base_size = 8) +
   theme(legend.position = "bottom",
         legend.text = element_text(size = 5),
@@ -231,23 +235,17 @@ ggplot(sp03_dist, aes(x = n, y = "", fill = sp03_labels)) +
         plot.title = element_text(size = 7),
         axis.title = element_text(size = 6))
 
+
 ```
 
 ```{r}
-#| tbl-cap: "Åbne besvarelser til hjemmesiden"
+#| tbl-cap: "Besvarelser vedrørende hjemmesiden"
 #| fig-pos: "H"
 #| out-width: 100%
 #| echo: false
-  #| output: false
+#| output: false
 #| message: false
 #| warning: false
-
-# Table (display)
-data |>
-  tabyl(sp03_labels) |>
-  adorn_totals("row") |>
-  adorn_pct_formatting(digits = 1) |>
-  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
 
 # Table (numeric, for inline text)
 sp03_summary <- data |>
@@ -258,7 +256,7 @@ sp03_summary <- data |>
 Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp04) & data$sp04 != "")` (`r round(sum(!is.na(data$sp04) & data$sp04 != "")/nrow(data) * 100,2)` %) et skriftligt svar på hvad, der kunne gøre dem mere tilfredse med hjemmesiden.
 
 ```{r}
-#| tbl-cap: "Åbne besvarelser til hjemmesiden"
+#| tbl-cap: "Tekstbesvarelser til hjemmesiden"
 #| echo: false
 #| message: false
 #| warning: false
@@ -297,98 +295,162 @@ sp04_tab |>
 
 # 4 Arrangementer
 
+*Hvor tilfreds er du samlet set med udbuddet af arrangementer?*
+
 ```{r}
 #| label: fig-sp-arrangementer
 #| fig-scap: "Arrangementer"
-#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med arrangementer?")
+#| fig-cap: !expr glue("Tilfredshed med udbuddet af arrangementer.")
+#| fig-pos: "H"
+#| fig-height: 1.75
+#| out-width: 100%
+#| echo: false
+#| output: true
+#| message: false
+#| warning: false
+
+sp05_dist <- data |>
+  count(sp05_labels, .drop = FALSE) |>
+  mutate(sp05_labels = fct_relevel(sp05_labels,
+           "Ikke besvaret", "Meget tilfreds", "Rimelig tilfreds", "Tilfreds",
+           "Mindre tilfreds", "Ikke tilfreds", "Slet ikke tilfreds"),
+         pct = n / sum(n),
+         label = ifelse(n > 0, paste0(n, "\n", round(pct * 100), "%"), ""))
+
+sat_colours <- c(
+  "Slet ikke tilfreds"  = "#D73027",
+  "Ikke tilfreds"       = "#FC8D59",
+  "Mindre tilfreds"     = "#FEE08B",
+  "Tilfreds"            = "#D9EF8B",
+  "Rimelig tilfreds"    = "#91CF60",
+  "Meget tilfreds"      = "#1A9850",
+  "Ikke besvaret"       = "grey70"
+)
+
+ggplot(sp05_dist, aes(x = n, y = "", fill = sp05_labels)) +
+  geom_col(color = "white", width = 0.5,
+           position = position_stack(reverse = TRUE)) +
+  geom_text(aes(label = label),
+            position = position_stack(vjust = 0.5, reverse = TRUE),
+            size = 2, color = "black") +
+  scale_fill_manual(values = sat_colours) +
+  guides(fill = guide_legend(nrow = 1)) +
+  labs(title = "", x = "Antal svar", y = "", fill = "") +
+  theme_minimal(base_size = 8) +
+  theme(legend.position = "bottom",
+        legend.text = element_text(size = 5),
+        legend.key.size = unit(0.4, "cm"),
+        plot.title = element_text(size = 7),
+        axis.title = element_text(size = 6))
+
+```
+```{r}
+#| label: text-arrangementer
+#| tbl-cap: "Besvarelser vedrørende arrangementer"
 #| fig-pos: "H"
 #| out-width: 100%
 #| echo: false
-#| output: true
+#| output: false
 #| message: false
 #| warning: false
-
-# Plot
-ggplot(data, aes(x = sp05_labels)) +
-  geom_bar(fill = "#285A19", color = "white") +
-  scale_x_discrete(drop = FALSE) +
-  labs(title = "Tilfredshed med arrangementer",
-       x = "", y = "Antal") +
-  theme_minimal(base_size = 10) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-```{r}
-#| tbl-cap: "Åbne besvarelser til arrangementer"
-#| out-width: 100%
-#| echo: false
-#| output: true
-#| message: false
-#| warning: false
-
-# Table (display)
-data |>
-  tabyl(sp05_labels) |>
-  adorn_totals("row") |>
-  adorn_pct_formatting(digits = 1) |>
-  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
 
 # Table (numeric, for inline text)
-sp05_summary <- data |>
-  tabyl(sp05_labels)
+sp06_summary <- data |>
+  tabyl(sp06_labels)
 
 ```
+Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp06) & data$sp06 != "")` (`r round(sum(!is.na(data$sp06) & data$sp06 != "")/nrow(data) * 100,2)` %) et skriftligt svar på hvad, der kunne gøre dem mere tilfredse med udbuddet af arrangementer.
 
-{{< pagebreak >}}
+```{r}
+#| tbl-cap: "Tekstbesvarelser til arrangementer"
+#| echo: false
+#| message: false
+#| warning: false
+
+esc <- function(x) {
+  x <- gsub("[\r\n]+", " ", x)                          # collapse embedded newlines
+  x <- gsub("\\\\", "\\\\textbackslash{}", x)
+  x <- gsub("([&%$#_{}])", "\\\\\\1", x)
+  x <- gsub("~", "\\\\textasciitilde{}", x)
+  x <- gsub("\\^", "\\\\textasciicircum{}", x)
+  x
+}
+
+sp06_tab <- data |>
+  filter(!is.na(sp06), trimws(sp06) != "") |>
+  mutate(nr = row_number(),
+         sp06 = esc(as.character(sp06))) |>
+  select(nr, sp06)
+
+sp06_tab |>
+  kable(col.names = c("Nr", "Svar"),
+        longtable = TRUE,
+        booktabs = TRUE,
+        linesep = "",
+        escape = FALSE) |>
+  kable_styling(
+    latex_options = "repeat_header",
+    full_width = FALSE
+  ) |>
+  column_spec(1, width = "2em") |>
+  column_spec(2, width = "35em",
+              background = ifelse(sp04_tab$nr %% 2 == 0, "gray!15", "white"))
+```
+
+  {{< pagebreak >}}
 
 # 5 URT
+
+*Hvor tilfreds er du samlet set med vores medlemsblad URT?*
 
 ```{r}
 #| label: fig-sp-urt
 #| fig-scap: "URT"
-#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med URT?")
+#| fig-cap: !expr glue("Tilfreshed med URT.")
 #| fig-pos: "H"
+#| fig-height: 1.75
 #| out-width: 100%
 #| echo: false
 #| output: true
 #| message: false
 #| warning: false
 
-# Plot
-ggplot(data, aes(x = sp05_labels)) +
-  geom_bar(fill = "#285A19", color = "white") +
-  scale_x_discrete(drop = FALSE) +
-  labs(title = "Tilfredshed med URT",
-       x = "", y = "Antal svar") +
-  theme_minimal(base_size = 10) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+sp07_dist <- data |>
+  count(sp07_labels, .drop = FALSE) |>
+  mutate(sp07_labels = fct_relevel(sp07_labels,
+           "Ikke besvaret", "Meget tilfreds", "Rimelig tilfreds", "Tilfreds",
+           "Mindre tilfreds", "Ikke tilfreds", "Slet ikke tilfreds"),
+         pct = n / sum(n),
+         label = ifelse(n > 0, paste0(n, "\n", round(pct * 100), "%"), ""))
+
+sat_colours <- c(
+  "Ikke besvaret"       = "grey70",
+  "Meget tilfreds"      = "#1A9850",
+  "Rimelig tilfreds"    = "#91CF60",
+  "Tilfreds"            = "#D9EF8B",
+  "Mindre tilfreds"     = "#FEE08B",
+  "Ikke tilfreds"       = "#FC8D59",
+  "Slet ikke tilfreds"  = "#D73027"
+  )
+
+ggplot(sp07_dist, aes(x = n, y = "", fill = sp07_labels)) +
+  geom_col(color = "white", width = 0.5,
+           position = position_stack(reverse = TRUE)) +
+  geom_text(aes(label = label),
+            position = position_stack(vjust = 0.5, reverse = TRUE),
+            size = 2, color = "black") +
+  scale_fill_manual(values = sat_colours) +
+  guides(fill = guide_legend(nrow = 1)) +
+  labs(title = "", x = "Antal svar", y = "", fill = "") +
+  theme_minimal(base_size = 8) +
+  theme(legend.position = "bottom",
+        legend.text = element_text(size = 5),
+        legend.key.size = unit(0.4, "cm"),
+        plot.title = element_text(size = 7),
+        axis.title = element_text(size = 6))
+
 ```
-
-```{r}
-#| label: fig-sp-8
-#| fig-scap: "URT"
-#| fig-cap: !expr glue("Hvor tilfreds er du samlet set med URT?")
-#| fig-pos: "H"
-#| out-width: 100%
-#| echo: false
-#| output: true
-#| message: false
-#| warning: false
-
-# Table (display)
-data |>
-  tabyl(sp07_labels) |>
-  adorn_totals("row") |>
-  adorn_pct_formatting(digits = 1) |>
-  knitr::kable(col.names = c("Tilfredshed", "Antal", "Procent"))
-
-# Table (numeric, for inline text)
-sp07_summary <- data |>
-  tabyl(sp07_labels)
-
-```
-
-{{< pagebreak >}}
 
 Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp07) & data$sp07 != "")` (`r round(sum(!is.na(data$sp07) & data$sp07 != "")/nrow(data) * 100,2)` %) et skriftligt svar på hvad, der kunne gøre dem mere tilfredse med URT.
 
@@ -430,9 +492,7 @@ sp08_tab |>
 
 {{< pagebreak >}}
 
-# 5 Prioriteter og planlægning
-
-Vi spurgte "Hvad synes du, er vigtigst at Dansk Botanisk Forening arbejder med i fremtiden?".
+# 6 Prioriteter og planlægning
 
 ```{r}
 #| label: data-prep-for-ranking
@@ -466,12 +526,21 @@ udsagn_tekst <- c(
   "6" = "Udvikling og udbygning af De Vilde Blomsters Dag"
 )
 
+# gennemsnitligt antal prioriteter
+mean_no_rankings <- rankings |>
+  count(id, name = "antal") |>
+  summarise(gennemsnit = mean(antal),
+            median = median(antal),
+            min = min(antal),
+            max = max(antal))
 ```
+
+Vi spurgte *Hvad synes du, er vigtigst at Dansk Botanisk Forening arbejder med i fremtiden?*. Vi havde listet 6 forskellige fokusområder. Det var ikke et krav at prioritere alle fokusområder. Medlemmerne have i gennemsnit prioriteret `r max(mean_no_rankings$gennemsnit)` emner. *Arrangementer og formidling (f.eks. URT) for medlemmer* var det fokusområde som flest gange blev prioriteret som nummer 1 og også havde den højst gennemsnitlige prioritering.
 
 ```{r}
 #| label: fig-sp-priorities
 #| fig-scap: "Prioriteter"
-#| fig-cap: !expr glue("Prioriteter")
+#| fig-cap: !expr glue("Antal gange et fokusområde har fået de mulige placeringer.")
 #| fig-pos: "H"
 #| out-width: 100%
 #| echo: false
@@ -485,7 +554,7 @@ prioritet_tabel <- rankings |>
               values_from = n,
               values_fill = 0,
               names_sort = TRUE) |>
-  mutate(Udsagn = udsagn_tekst[udsagn], .before = 1) |>
+  mutate(Fokusområde = udsagn_tekst[udsagn], .before = 1) |>
   select(-udsagn) |>
    arrange(desc(`1`))   # keep statements in 1–6 order
 
@@ -502,7 +571,7 @@ prioritet_tabel |>
 ```{r}
 #| label: fig-sp-priorities-gns
 #| fig-scap: "Prioriteter"
-#| fig-cap: !expr glue("Gennemsnitlig placering af fokusområder")
+#| fig-cap: !expr glue("Gennemsnitlig prioritering af fokusområder og antal gange det er rangeret (uanset prioritet).")
 #| fig-pos: "H"
 #| out-width: 100%
 #| echo: false
@@ -520,7 +589,7 @@ gns_prioritet <- rankings |>
 
 gns_prioritet |>
   kable(booktabs = TRUE, longtable = TRUE, linesep = "",
-        col.names = c("Udsagn", "Gns. placering", "Antal")) |>
+        col.names = c("Forkusområde", "Gns. prioritering", "Antal gange rangeret")) |>
   kable_styling(latex_options = c("striped", "repeat_header"),
                 full_width = FALSE) |>
   column_spec(1, width = "16em")
@@ -528,7 +597,9 @@ gns_prioritet |>
 
 ```
 
-Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp10) & data$sp10 != "")` (`r round(sum(!is.na(data$sp10) & data$sp10 != "")/nrow(data) * 100,2)` %) et skriftlige svar på spørgsmålet "Er der noget, som ikke var på listen, som du synes foreningen burde arbejde med?"
+{{< pagebreak >}}
+
+Ud af de `r nrow(data)` besvarelser gav `r sum(!is.na(data$sp10) & data$sp10 != "")` (`r round(sum(!is.na(data$sp10) & data$sp10 != "")/nrow(data) * 100,2)` %) et skriftlige svar på spørgsmålet *Er der noget, som ikke var på listen, som du synes foreningen burde arbejde med?*.
 
 ```{r}
 #| tbl-cap: "Åbne besvarelser til prioriteter"
