@@ -75,7 +75,9 @@ split_files$district <- as.factor(m[, 4])
 summary(split_files)
 
 nas <- split_files |> 
-  filter(is.na(page)) 
+  filter(is.na(district)) 
+
+print(nas)
 
 # Fix the column name first
 names(split_files) <- "full_path"
