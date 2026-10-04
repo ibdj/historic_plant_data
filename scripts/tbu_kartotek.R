@@ -6,6 +6,7 @@ library(pdftools)
 library(tidyverse)
 library(tesseract)
 library(magick)
+library(rgbif)
 
 # Set your main folder path
 main_folder <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek/split"
@@ -24,28 +25,6 @@ print(pdf_files)
 pdf_files_df <- as.data.frame(pdf_files) 
 
 pdf_files_df$species <- tools::file_path_sans_ext(basename(pdf_files_df$pdf_files))
-
-
-# Output folder for split pages
-#output_dir <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek/split"
-#dir.create(output_dir, showWarnings = FALSE)
-
-# Loop over all PDFs and split into single pages
-#for (i in seq_len(nrow(pdf_files_df))) {
-  
-#  input_path <- path.expand(pdf_files_df$pdf_files[i])
-#  species     <- pdf_files_df$species[i]
-#  n_pages     <- pdf_info(input_path)$pages
-  
-#   if (n_pages == 1) {
-#     file.copy(input_path, file.path(output_dir, paste0(species, ".pdf")))
-#   } else {
-#     for (page in seq_len(n_pages)) {
-#       out_file <- file.path(output_dir, paste0(species, "_p", page, ".pdf"))
-#       pdf_subset(input_path, pages = page, output = out_file)
-#     }
-#   }
-# }
 
 split_folder <- "~/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek/split" 
 
@@ -68,7 +47,7 @@ nm <- tools::file_path_sans_ext(basename(split_files$full_path))
 
 m <- str_match(nm, "^(.*)_p(\\d+)(?:_tbu(.+))?$")
 
-split_files$species  <- m[, 2]
+split_files$species  <- as.factor(m[, 2])
 split_files$page     <- as.integer(m[, 3])
 split_files$district <- as.factor(m[, 4])
 
@@ -77,7 +56,6 @@ summary(split_files)
 nas <- split_files |> 
   filter(is.na(district)) 
 
-print(nas)
 
 # Fix the column name first
 names(split_files) <- "full_path"
@@ -89,40 +67,82 @@ split_files$species <- gsub("_p\\d+$", "", tools::file_path_sans_ext(basename(sp
 split_files$page <- as.integer(gsub(".*_p(\\d+)$", "\\1", tools::file_path_sans_ext(basename(split_files$full_path))))
 
 head(split_files)
+# clean up #####
 
-stats_split <- split_files |> 
-  group_by(species) |> 
-  summarise(
-    count   = n(),
-    max_page = max(page, na.rm = TRUE)
-  )
+dir <- "/Users/ibdj/Library/Mobile Documents/com~apple~CloudDocs/botany/tbu/tartotek/TBU_Kartotek/split/med_distrikt"
 
-text <- pdf_text(split_files$full_path[1])
-cat(text)
+valid <- c(setdiff(as.character(1:53), c("22", "39", "45")),
+           "13a", "13b", "22a", "22b", "39a", "39b", "45a", "45b",
+           "Slesvig")
 
-tesseract_download("dan")
+files <- list.files(dir, pattern = "\\.pdf$")
+tbu   <- sub(".*_tbu(.*)\\.pdf$", "\\1", files)
 
-eng <- tesseract("dan")
-img <- pdftools::pdf_convert(split_files$full_path[1], dpi = 300)
-text <- ocr(img, engine = eng)
-cat(text)
-file.remove(img)
+bad <- data.frame(file = files, tbu = tbu)[!tbu %in% valid, ]
+nrow(bad)
+table(bad$tbu)
+writeLines(bad$file, "~/Desktop/tbu_invalid.txt")
+print(bad)
 
-split_files$text <- sapply(split_files$full_path, function(path) {
-  tryCatch({
-    img <- pdftools::pdf_convert(path, dpi = 300, verbose = FALSE)
-    text <- ocr(img, engine = tesseract("dan"))
-    file.remove(img)
-    text
-  }, error = function(e) NA)
-})
+# basic meta data
+
+split_files <- split_files |>
+  mutate(rang = case_when(
+    str_detect(species, fixed(" × "))    ~ "hybrid",
+    str_detect(species, fixed(" ×"))    ~ "hybrid",
+    str_detect(species, fixed("var."))   ~ "varietet",
+    str_detect(species, fixed("subsp.")) ~ "underart",
+    str_detect(species, fixed("ssp."))    ~ "underart",
+    TRUE                                 ~ "art"
+  ))
+
+count(split_files, rang)
+
+rang_antal <- split_files |>
+  group_by(species, rang) |>
+  summarise(antal = n(), .groups = "drop")
+
+# checking the order of the pages and distrikts ###
+
+ord <- c(as.character(1:12), "13a", "13b", as.character(14:21), "22a", "22b",
+         as.character(23:38), "39a", "39b", as.character(40:44), "45a", "45b",
+         as.character(46:53), "Slesvig")
+
+df <- tibble(file = list.files(dir, pattern = "\\.pdf$")) |>
+  mutate(species = sub("_p[0-9]+_tbu.*$", "", file),
+         page    = as.integer(sub(".*_p([0-9]+)_tbu.*$", "\\1", file)),
+         tbu     = sub(".*_tbu(.*)\\.pdf$", "\\1", file),
+         rank    = match(tbu, ord)) |>
+  arrange(species, page) |>
+  group_by(species) |>
+  mutate(prev_tbu = lag(tbu), next_tbu = lead(tbu),
+         drop = rank < lag(rank)) |>
+  ungroup()
+
+flagged <- filter(df, drop)
+nrow(flagged)
+flagged |> select(species, page, prev_tbu, tbu, next_tbu) |> print(n = 30)
+write.csv(flagged, "~/Desktop/tbu_order_check.csv", row.names = FALSE)
+
+df <- df |>
+  group_by(species) |>
+  mutate(prev_file = lag(file)) |>
+  ungroup()
+
+flagged <- filter(df, drop)
+flagged |> select(file, prev_file, prev_tbu, tbu, next_tbu) |> print(n = Inf)
 
 
-h <- hist(stats_split$count, breaks = seq(min(stats_split$count), max(stats_split$count) + 5, by = 5), plot = FALSE)
+# which ones contrain an x #
 
-hist(stats_split$count, breaks = seq(min(stats_split$count), max(stats_split$count) + 5, by = 5), xaxt = "n")
+split_files |>
+  filter(str_detect(species, "\\bx\\b|×")) |>
+  distinct(species) |>
+  pull(species)
 
-axis(5, at = seq(5, 100), labels = FALSE, tck = -0.02)
-axis(5, at = h$mids)
+split_files |>
+  filter(str_detect(species, "(^| )x[^ ]") | str_detect(species, "×[^ ]|[^ ]×")) |>
+  distinct(species) |>
+  pull(species)
 
-
+#match to gbif
