@@ -132,6 +132,10 @@ df <- df |>
 flagged <- filter(df, drop)
 flagged |> select(file, prev_file, prev_tbu, tbu, next_tbu) |> print(n = Inf)
 
+summary(split_files)
+
+number_pages <- split_files |> 
+  filter(page > 58)
 
 # which ones contrain an x #
 
