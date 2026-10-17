@@ -49,6 +49,7 @@ if (nrow(problems) > 0) {
   print(problems, n = Inf)
 }
 
+matched <- mutate(matched, speciesKey = as.integer(speciesKey))
 keys <- unique(na.omit(matched$speciesKey))
 
 # ---- 2. Define West and East by country code ------------------------------
@@ -86,6 +87,8 @@ if (file.exists(cache_file)) {
   
   saveRDS(occ, cache_file)
 }
+
+occ <- mutate(occ, speciesKey = as.integer(speciesKey))
 
 # ---- 4. Optional coordinate cleaning --------------------------------------
 if (run_cleaning) {
