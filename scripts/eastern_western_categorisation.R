@@ -24,10 +24,11 @@ library(readr)
 library(sf)
 library(countrycode)
 library(CoordinateCleaner)
+library(rnaturalearth)   # also needs rnaturalearthdata installed
 
 # ---- Settings -------------------------------------------------------------
-species_file      <- "data/greenland_species.csv"  # one column named 'species'
-output_file       <- "data/west_east_index.csv"
+species_file      <- "greenland_species.csv"  # one column named 'species'
+output_file       <- "west_east_index.csv"
 cache_file        <- "gbif_occurrences.rds"   # delete to force a new download
 cell_size_m       <- 100000                   # 100 km
 min_target_spp    <- 5      # list species needed for a cell to count as sampled
@@ -41,7 +42,8 @@ spp <- read_csv(species_file, show_col_types = FALSE)
 
 matched <- name_backbone_checklist(spp$species) |>
   select(input = verbatim_name, speciesKey, gbif_name = species,
-         matchType, status)
+         matchType, status) |>
+  mutate(speciesKey = as.integer(speciesKey))
 
 problems <- filter(matched, is.na(speciesKey) | matchType != "EXACT")
 if (nrow(problems) > 0) {
@@ -49,7 +51,6 @@ if (nrow(problems) > 0) {
   print(problems, n = Inf)
 }
 
-matched <- mutate(matched, speciesKey = as.integer(speciesKey))
 keys <- unique(na.omit(matched$speciesKey))
 
 # ---- 2. Define West and East by country code ------------------------------
@@ -116,22 +117,41 @@ occ <- occ |>
 
 cells <- distinct(occ, speciesKey, side, cell)
 
-# ---- 6. Sampling effort: cells with enough list species --------------------
-sampled <- cells |>
-  count(side, cell, name = "n_spp") |>
-  filter(n_spp >= min_target_spp)
+# ---- 6. Area correction: land cells available on each side ---------------
+# Builds the same 100 km grid over the land of the West and East countries
+# and counts how many cells touch land on each side.
+eqearth <- "+proj=eqearth +datum=WGS84 +units=m"
 
-n_sampled <- count(sampled, side, name = "n_sampled")
-print(n_sampled)
+land <- ne_countries(scale = 50, returnclass = "sf") |>
+  mutate(side = case_when(iso_a2_eh %in% west_cc ~ "W",
+                          iso_a2_eh %in% east_cc ~ "E")) |>
+  filter(!is.na(side)) |>
+  st_transform(eqearth) |>
+  st_make_valid()
 
-# ---- 7. Occupancy and west-east index -------------------------------------
+bb   <- st_bbox(land)
+grid <- st_make_grid(land, cellsize = cell_size_m,
+                     offset = floor(bb[c("xmin", "ymin")] / cell_size_m) * cell_size_m)
+cent <- st_coordinates(st_centroid(grid))
+hits <- st_intersects(grid, land)
+
+land_cells <- tibble(
+  cell = paste(floor(cent[, 1] / cell_size_m), floor(cent[, 2] / cell_size_m)),
+  side = lapply(hits, function(i) unique(land$side[i]))
+) |>
+  unnest(side) |>
+  distinct()
+
+n_land <- count(land_cells, side, name = "n_land")
+print(n_land)
+
+# ---- 7. West-east index: share of land cells occupied on each side --------
 result <- cells |>
-  semi_join(sampled, by = c("side", "cell")) |>
   count(speciesKey, side, name = "n_occ") |>
   complete(speciesKey = keys, side = c("W", "E"), fill = list(n_occ = 0)) |>
-  left_join(n_sampled, by = "side") |>
-  mutate(prop = n_occ / n_sampled) |>
-  pivot_wider(names_from = side, values_from = c(n_occ, n_sampled, prop)) |>
+  left_join(n_land, by = "side") |>
+  mutate(prop = n_occ / n_land) |>
+  pivot_wider(names_from = side, values_from = c(n_occ, n_land, prop)) |>
   mutate(
     index = (prop_W - prop_E) / (prop_W + prop_E),
     category = case_when(
@@ -142,9 +162,31 @@ result <- cells |>
     )
   )
 
+# ---- Sampling-effort version (needs a list of many species) ---------------
+# sampled <- cells |>
+#   count(side, cell, name = "n_spp") |>
+#   filter(n_spp >= min_target_spp)
+# n_sampled <- count(sampled, side, name = "n_sampled")
+#
+# result <- cells |>
+#   semi_join(sampled, by = c("side", "cell")) |>
+#   count(speciesKey, side, name = "n_occ") |>
+#   complete(speciesKey = keys, side = c("W", "E"), fill = list(n_occ = 0)) |>
+#   left_join(n_sampled, by = "side") |>
+#   mutate(prop = n_occ / n_sampled) |>
+#   pivot_wider(names_from = side, values_from = c(n_occ, n_sampled, prop)) |>
+#   mutate(
+#     index = (prop_W - prop_E) / (prop_W + prop_E),
+#     category = case_when(
+#       n_occ_W + n_occ_E < min_cells ~ "insufficient data",
+#       index >  threshold            ~ "western",
+#       index < -threshold            ~ "eastern",
+#       TRUE                          ~ "both"
+#     )
+#   )
+
 out <- matched |>
   left_join(result, by = "speciesKey") |>
   arrange(index)
 
 write_csv(out, output_file)
-count(out, category)
