@@ -25,6 +25,7 @@ library(sf)
 library(countrycode)
 library(CoordinateCleaner)
 library(rnaturalearth)   # also needs rnaturalearthdata installed
+library(ggplot2)
 
 # ---- Settings -------------------------------------------------------------
 species_file      <- "greenland_species.csv"  # one column named 'species'
@@ -190,3 +191,49 @@ out <- matched |>
   arrange(index)
 
 write_csv(out, output_file)
+count(out, category)
+
+# ---- 8. Map of occupied cells for one species ------------------------------
+# Pick the species to map (default: the first one in the list)
+plot_key <- keys[1]
+# plot_key <- matched$speciesKey[matched$input == "Saxifraga oppositifolia"]
+
+# Polar equal-area projection centred on Greenland
+arctic <- "+proj=laea +lat_0=90 +lon_0=-40 +datum=WGS84 +units=m"
+
+grid_sf <- st_sf(
+  cell = paste(floor(cent[, 1] / cell_size_m), floor(cent[, 2] / cell_size_m)),
+  geometry = grid
+)
+
+occ_cells <- grid_sf |>
+  inner_join(filter(cells, speciesKey == plot_key), by = "cell") |>
+  st_transform(arctic)
+
+# Background land, Northern Hemisphere only
+sf_use_s2(FALSE)
+world <- ne_countries(scale = 50, returnclass = "sf") |>
+  st_make_valid() |>
+  st_crop(c(xmin = -180, xmax = 180, ymin = 0, ymax = 90)) |>
+  st_transform(arctic)
+sf_use_s2(TRUE)
+
+r <- 9e6  # roughly the equator in this projection
+
+ggplot() +
+  geom_sf(data = world, fill = "grey92", colour = "grey65", linewidth = 0.1) +
+  geom_sf(data = occ_cells, aes(fill = side), colour = NA, alpha = 0.85) +
+  scale_fill_manual(
+    values = c(W = "#1b7837", E = "#762a83"),
+    labels = c(W = "North America", E = "Eurasia"),
+    name = NULL
+  ) +
+  coord_sf(crs = arctic, xlim = c(-r, r), ylim = c(-r, r), expand = FALSE) +
+  labs(
+    title = matched$gbif_name[match(plot_key, matched$speciesKey)],
+    subtitle = sprintf("Occupied %d km cells  |  west-east index = %.2f",
+                       cell_size_m / 1000,
+                       result$index[result$speciesKey == plot_key])
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom", axis.text = element_blank())
